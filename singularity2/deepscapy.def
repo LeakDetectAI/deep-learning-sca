@@ -1,0 +1,61 @@
+Bootstrap: docker
+#From: tensorflow/tensorflow:latest-gpu
+From: nvidia/cuda:11.2.0-cudnn8-devel-ubuntu16.04
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update --fix-missing
+    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/cm/local/apps/cuda-driver/libs/current/lib64
+
+    apt-get install -y ssh-client make build-essential wget bzip2 ca-certificates curl git ffmpeg openssl \
+    libssl-dev libreadline6-dev libbz2-dev libsqlite3-dev libncurses5-dev libncursesw5-dev llvm \
+    tk-dev libffi-dev libdb-dev libexpat1-dev libpq-dev libedit-dev zlib1g-dev liblzma-dev libgdbm-dev libmpdec-dev \
+    vim-tiny inkscape jed libsm6 libxext-dev libxrender1 lmodern netcat tzdata xz-utils unzip gcc
+
+    # python3.8.8 from source
+    export PYTHON_VERSION="3.9.2"
+    cd /root/
+    wget https://www.python.org/ftp/python/$PYTHON_VERSION/Python-$PYTHON_VERSION.tgz
+    tar zxf Python-$PYTHON_VERSION.tgz
+    cd Python-$PYTHON_VERSION
+    ./configure --enable-optimizations
+    make altinstall
+    cd .. && rm -rf Python-$PYTHON_VERSION.tgz Python-$PYTHON_VERSION
+    cd $HOME
+    rm -rf /usr/bin/python3
+    ln -s /usr/local/bin/python3.9 /usr/bin/python3
+
+    # install pip
+    export PATH="/usr/local/opt/openssl/bin:/usr/bin/python3:$PATH"
+    curl -kL https://bootstrap.pypa.io/get-pip.py | python3
+    apt-get clean
+
+    # pipenv
+    pip3 install virtualenv
+    pip3 install pipenv
+
+    pipenv --python /usr/bin/python3
+
+    # The cluster executes the image with another user, make executable
+    #chmod -R 777 /deepscapy
+
+    # Creating mountpoints for PC2
+    mkdir -p /local /scratch /upb/scratch/departments/pc2 /upb/departments/pc2 /cm/local/ /cm/shared
+    ln -s /local /tmpdir
+
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export KERAS_BACKEND=tensorflow
+    export PFS_FOLDER=/scratch/hpc-prf-obal/prithag/
+    export MKL_THREADING_LAYER=GNU
+    export PIPENV_VENV_IN_PROJECT=1
+    export LANG=C.UTF-8
+    export LC_ALL=C.UTF-8
+    export PYTHONFAULTHANDLER=1
+    export PYTHONUNBUFFERED=1
+    export PIP_DEFAULT_TIMEOUT=100
+
+
+
+%runscript
+    exec "$@"

@@ -1,0 +1,57 @@
+Bootstrap: docker
+From: nvidia/cuda:11.2.0-cudnn8-devel-ubuntu16.04
+
+%post
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update -y
+
+    apt-get install -y ssh-client make build-essential libssl-dev zlib1g-dev libbz2-dev \
+    libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
+    xz-utils tk-dev libffi-dev liblzma-dev python-openssl git libpq-dev libedit-dev
+    git clone -b 1.2.24.1 https://github.com/pyenv/pyenv.git /deepscapy/pyenv
+    export PATH="/deepscapy/pyenv/bin:$PATH"
+    export PYENV_ROOT=/deepscapy/pyenv
+    eval "$(pyenv init -)"
+    env PYTHON_CONFIGURE_OPTS="--enable-shared" pyenv install 3.9.2
+    pyenv global 3.9.2
+	eval "echo 3.9.2 > /deepscapy/pyenv/version"
+
+	export POETRY_HOME=/deepscapy/poetry
+    export POETRY_VIRTUALENVS_CREATE=false
+    curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python -
+    export PATH="/deepscapy/poetry/bin:$PATH"
+    poetry self update 1.1.5
+    #poetry config virtualenvs.create true
+    eval "$(pyenv init --path)"
+    eval "$(pyenv init -)"
+    
+    # The cluster executes the image with another user, make executable
+    chmod -R 777 /deepscapy
+
+    # Creating mountpoints for PC2
+    mkdir -p /local /scratch /upb/scratch/departments/pc2 /upb/departments/pc2 /cm/local/ /cm/shared
+    ln -s /local /tmpdir
+
+    rm -rf /var/lib/apt/lists/*
+
+%environment
+    export POETRY_HOME=/deepscapy/poetry
+    export POETRY_VIRTUALENVS_CREATE=true
+    export KERAS_BACKEND=tensorflow
+    export PFS_FOLDER=/scratch/hpc-prf-obal/vngolani/
+    export POETRY_VIRTUALENVS_PATH=/scratch/hpc-prf-obal/vngolani/deep-learning-sca-new/deep-learning-sca/virtualenvs
+    export MKL_THREADING_LAYER=GNU
+    export PYENV_ROOT=/deepscapy/pyenv
+    export PATH="/deepscapy/pyenv/bin:$PATH"
+    export PATH="/deepscapy/poetry/bin:$PATH"
+    eval "$(pyenv init - --no-rehash)"
+    export PYTHONFAULTHANDLER=1
+    export PYTHONUNBUFFERED=1
+    export PIP_DEFAULT_TIMEOUT=100
+
+
+
+%runscript
+    cd /scratch/hpc-prf-obal/vngolani/deep-learning-sca-new/deep-learning-sca/experiments
+
+    poetry run $*

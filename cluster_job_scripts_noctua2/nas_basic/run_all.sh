@@ -1,0 +1,5 @@
+bash DP4CONTEST_nas_train_models.sh
+bash AES_HD_nas_train_models.sh
+bash AES_RD_nas_train_models.sh
+bash ASCAD_nas_train_models.sh
+#bash CHES_CTF_nas_train_models.sh
