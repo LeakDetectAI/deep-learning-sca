@@ -1,19 +1,12 @@
-import numpy as np
 import tensorflow as tf
 from keras import backend as K
-from keras.metrics import binary_crossentropy
-
-from .dice_bce_loss_helper import dice_loss
-from .focal_loss_helper import sigmoid_focal_crossentropy
-from .logarithm import LogTensorTF
-from .topk_losses_helper import split_tf, log_sum_exp_k_autograd_tf, detect_large_tf
 
 # Loss Function from Ranking Loss Paper Github Repository (https://github.com/gabzai/Ranking-Loss-SCA)
 # Doesn't work with the current models due to library compatibility issues
 # Made compatible by using y_pred scores rather than the layer itself
-__all__ = ['ranking_loss', 'cross_entropy_ratio', 'binary_crossentropy_focal_loss',
-           'categorical_crossentropy_focal_loss', 'bce_dice_loss', 'ranking_loss_optimized',
-           'categorical_crossentropy_focal_loss_ratio', 'binary_crossentropy_focal_loss_ratio']
+__all__ = ['ranking_loss', 'cross_entropy_ratio', 'categorical_crossentropy_focal_loss', 'ranking_loss_optimized',
+           'categorical_crossentropy_focal_loss_ratio']
+
 def ranking_loss(alpha_value=1.0, nb_class=256):
     def loss(y_true, y_pred):
         alpha = K.constant(alpha_value, dtype='float32')
@@ -63,19 +56,20 @@ def ranking_loss_optimized(alpha_value=1.0):
         alpha = K.constant(alpha_value, dtype='float32')
         y_true = tf.cast(tf.math.argmax(y_true, axis=1), dtype=tf.int32)
         y_true_int = K.cast(y_true, dtype='int32')
-
         batch_s = K.cast(K.shape(y_true_int)[0], dtype='int32')
+
+        # Indexing the training set (range_value = (?,))
         batch_range = K.arange(0, batch_s, dtype='int32')
 
         # Get rank and scores associated with the secret key (rank_sk = (?,))
         # values_topk_logits = shape(?, nb_class) ; indices_topk_logits = shape(?, nb_class)
-        indices = tf.concat([batch_range[:, None], y_true_int[:, None]], 1)
+        indices = tf.concat([batch_range[:, None], y_true[:, None]], 1)
         score_sk = tf.gather_nd(y_pred, indices)
         # Ranking Loss sk*-sk
         loss_rank_total = score_sk[:, None] - y_pred
         # Ranking Logistic Loss sum_{k \in K/k*} log2(1 + exp(sk*-sk))
         logistic_loss = K.log(1 + K.exp(-1 * alpha * (loss_rank_total))) / K.log(2.0)
-        loss_rank = tf.reduce_sum(logistic_loss, axis=1) - - tf.constant(1.)
+        loss_rank = tf.reduce_sum(logistic_loss, axis=1) - 1.0  # K.ones(batch_s, dtype='float32')
         return tf.reduce_mean(loss_rank)
 
     return loss
@@ -106,149 +100,48 @@ def ranking_loss_topk(alpha_value=10, k=256):
 
 
 # Loss Function from Novel CER Paper as described in the Ranking Loss Paper
-def cross_entropy_ratio():
+def cross_entropy_ratio(n=1):
     def loss(y_true, y_pred):
-        # K.sum() for original_cce & shuffled_cce
-        original_cce = K.sum(K.categorical_crossentropy(y_true, y_pred))
-        shuffled_y_true = tf.random.shuffle(y_true)
-        shuffled_cce = K.sum(K.categorical_crossentropy(shuffled_y_true, y_pred))
-        cross_entropy_ratio_loss = original_cce / shuffled_cce
+        # K.sum() for orignal_cee & shuffled_cce
+        orignal_cce = K.categorical_crossentropy(y_true, y_pred)
+        ce_shuffled = 0.0
+        for i in range(n):
+            y_true_shuffled = tf.random.shuffle(y_true)
+            ce_shuffled += tf.keras.losses.categorical_crossentropy(y_true_shuffled, y_pred)
+        ce_shuffled = ce_shuffled / n
+        cross_entropy_ratio_loss = orignal_cce / ce_shuffled
         return cross_entropy_ratio_loss
-
-    return loss
-
-
-def binary_crossentropy_focal_loss(alpha=0.25, gamma=2, from_logits=False):
-    def loss(targets, inputs):
-        sfce_obj = sigmoid_focal_crossentropy(y_true=targets, y_pred=inputs, alpha=alpha, gamma=gamma,
-                                              from_logits=from_logits, base_loss='binary_crossentropy')
-        return sfce_obj
 
     return loss
 
 
 def categorical_crossentropy_focal_loss(alpha=0.25, gamma=2, from_logits=False):
-    def loss(targets, inputs):
-        sfce_obj = sigmoid_focal_crossentropy(y_true=targets, y_pred=inputs, alpha=alpha, gamma=gamma,
-                                              from_logits=from_logits, base_loss='categorical_crossentropy')
-        return sfce_obj
+    def loss(y_true, y_pred):
+        epsilon = K.epsilon()
+        if from_logits:
+            y_pred = tf.sigmoid(y_pred)
+
+        y_pred = K.clip(y_pred, epsilon, 1. - epsilon)
+        # Calculate Cross Entropy
+        cross_entropy = -y_true * K.log(y_pred)
+        # Calculate Focal Loss
+        loss = alpha * K.pow(1 - y_pred, gamma) * cross_entropy
+        # Compute mean loss in mini_batch
+        return K.mean(K.sum(loss, axis=-1))
 
     return loss
 
 
-def binary_crossentropy_focal_loss_ratio(alpha=0.25, gamma=2, from_logits=False):
+def categorical_crossentropy_focal_loss_ratio(alpha=0.25, gamma=2, from_logits=False, n=1):
     def loss(y_true, y_pred):
-        # K.sum() for original_cce & shuffled_cce
-        original_cce = binary_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(y_true, y_pred)
-        shuffled_y_true = tf.random.shuffle(y_true)
-        shuffled_cce = binary_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(
-            shuffled_y_true, y_pred)
-        cross_entropy_ratio_loss = original_cce / shuffled_cce
-        return cross_entropy_ratio_loss
-
-    return loss
-
-
-def categorical_crossentropy_focal_loss_ratio(alpha=0.25, gamma=2, from_logits=False):
-    def loss(y_true, y_pred):
-        # K.sum() for original_cce & shuffled_cce
-        original_cce = categorical_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(y_true,
-                                                                                                              y_pred)
-        shuffled_y_true = tf.random.shuffle(y_true)
-        shuffled_cce = categorical_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(
-            shuffled_y_true, y_pred)
-        cross_entropy_ratio_loss = original_cce / shuffled_cce
-        return cross_entropy_ratio_loss
-
-    return loss
-
-
-# Source: https://github.com/shruti-jadon/Semantic-Segmentation-Loss-Functions
-def bce_dice_loss(smooth=1.0):
-    def loss(y_true, y_pred):
-        dice_bce_loss = binary_crossentropy(y_true, y_pred) + dice_loss(y_true, y_pred, smooth)
-        return dice_bce_loss / 2.0
-
-    return loss
-
-
-# Loss function made compatible with Tensorflow (Pytorch Loss Source: https://github.com/oval-group/smooth-topk)
-def Topk_Smooth_SVM(num_classes=256, k=1, tau=1., alpha=1.):
-    def loss(y_true, y_pred):
-        labels = tf.cast(tf.range(num_classes), dtype=tf.int32)
-        y_true = tf.cast(tf.math.argmax(y_true, axis=1), dtype=tf.int32)
-
-        x_1, x_2 = split_tf(y_pred, y_true, labels)
-        x_1 = tf.cast(tf.math.divide(x_1, k * tau), dtype=tf.float64)
-        x_2 = tf.cast(tf.math.divide(x_2, k * tau), dtype=tf.float64)
-
-        res = log_sum_exp_k_autograd_tf(x_1, k)
-        term_1, term_2 = res[1], res[0]
-        term_1, term_2 = LogTensorTF(term_1), LogTensorTF(term_2)
-
-        X_2 = LogTensorTF(x_2)
-        cst = tf.cast(tf.fill([1], float(alpha) / tau), tf.float64)
-        One_by_tau = LogTensorTF(cst)
-        Loss_ = term_2 * X_2
-
-        loss_pos = (term_1 * One_by_tau + Loss_).tf()
-        loss_neg = Loss_.tf()
-        loss_smooth = tau * (loss_pos - loss_neg)
-
-        return loss_smooth
-
-    return loss
-
-
-# Loss function made compatible with Tensorflow (Pytorch Loss Source: https://github.com/oval-group/smooth-topk)
-def Topk_Hard_SVM(num_classes=256, k=1, alpha=1.):
-    def loss(y_true, y_pred):
-        labels = tf.cast(tf.range(num_classes), dtype=tf.int32)
-        y_true = tf.cast(tf.math.argmax(y_true, axis=1), dtype=tf.int32)
-
-        x_1, x_2 = split_tf(y_pred, y_true, labels)
-
-        max_1, _ = tf.math.top_k(x_1 + alpha, k=k)
-        max_1 = tf.math.reduce_mean(max_1, axis=1)
-
-        max_2 = tf.math.top_k(x_1, k=k - 1).values
-        max_2 = (tf.math.reduce_sum(max_2, axis=1) + x_2) / k
-
-        loss_hard = tf.clip_by_value(max_1 - max_2, 0, np.inf)
-
-        return loss_hard
-
-    return loss
-
-
-# Loss function made compatible with Tensorflow (Pytorch Loss Source: https://github.com/oval-group/smooth-topk)
-def SmoothTopkSVM(n_classes=256, alpha=1, tau=1., k=5, thresh=1e3):
-    def loss(y_true, y_pred):
-        y_true = tf.cast(tf.math.argmax(y_true, axis=1), dtype=tf.int32)
-        smooth, hard = detect_large_tf(y_pred, k, tau, thresh)
-        total_loss = 0
-
-        smooth_int = tf.cast(smooth, dtype=tf.int32)
-        hard_int = tf.cast(hard, dtype=tf.int32)
-
-        if tf.cast(tf.math.reduce_sum(smooth_int), dtype=tf.bool):
-            x_s, y_s = y_pred[smooth], y_true[smooth]
-            x_s = tf.reshape(x_s, [-1, tf.shape(y_pred)[1]])
-            # y_s = to_categorical(y_s, num_classes=n_classes)
-            y_s = tf.one_hot(y_s, n_classes)
-            total_loss += tf.math.reduce_sum(
-                Topk_Smooth_SVM(num_classes=n_classes, k=k, tau=tau, alpha=alpha)(y_s, x_s)) / tf.cast(
-                tf.shape(y_pred)[0], dtype=tf.float64)
-
-        if tf.cast(tf.math.reduce_sum(hard_int), dtype=tf.bool):
-            x_h, y_h = y_pred[hard], y_true[hard]
-            x_h = tf.reshape(x_h, [-1, tf.shape(y_pred)[1]])
-            # y_h = to_categorical(y_h, num_classes=n_classes)
-            y_h = tf.one_hot(y_h, n_classes)
-            total_loss += tf.math.reduce_sum(
-                Topk_Hard_SVM(num_classes=n_classes, k=k, alpha=alpha)(y_h, x_h)) / tf.cast(tf.shape(y_pred)[0],
-                                                                                            dtype=tf.float64)
-
-        return total_loss
-
+        flcce_orignal = categorical_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(y_true,
+                                                                                                               y_pred)
+        flcce_shuffled = 0.0
+        for i in range(n):
+            shuffled_y_true = tf.random.shuffle(y_true)
+            flcce_shuffled += categorical_crossentropy_focal_loss(alpha=alpha, gamma=gamma, from_logits=from_logits)(
+                shuffled_y_true, y_pred)
+        flcce_shuffled = flcce_shuffled / n
+        flcce_ratio_loss = flcce_orignal / flcce_shuffled
+        return flcce_ratio_loss
     return loss

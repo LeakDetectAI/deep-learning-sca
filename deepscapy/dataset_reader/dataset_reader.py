@@ -23,7 +23,7 @@ class DatasetReader(metaclass=ABCMeta):
         """
         self.dr_logger = logging.getLogger("DatasetReader")
         if "pc2" in os.environ["HOME"]:
-            dirname = os.path.join(os.environ["PFS_FOLDER"], "deep-learning-sca", "deepscapy", "datasets")
+            dirname = os.path.join(os.environ["PFS_FOLDERA"], "deep-learning-sca", "deepscapy", "datasets")
         else:
             dirname = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
                 "dataset_reader",

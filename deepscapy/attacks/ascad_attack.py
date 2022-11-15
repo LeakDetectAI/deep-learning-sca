@@ -20,6 +20,7 @@ class ASCADAttack(AttackModel):
                          reshape_type=reshape_type, extension=extension, num_classes=num_classes, n_folds=n_folds,
                          seed=seed, shuffle=shuffle, **kwargs)
         self.offset = np.zeros_like((self.plaintext_ciphertext))
+        self.dataset = dataset_type
 
     def attack(self, X_attack, Y_attack, model_evaluate_args=None, model_predict_args=None):
         super().attack(X_attack=X_attack, Y_attack=Y_attack, model_evaluate_args=model_evaluate_args,
@@ -27,7 +28,8 @@ class ASCADAttack(AttackModel):
 
     def _rank_compute(self, prediction, plaintext, secret_key, byte):
         (nb_trs, nb_hyp) = prediction.shape
-
+        if self.leakage_model == HW:
+            nb_hyp = 256
         key_log_prob = np.zeros(nb_hyp)
         rank_evol = np.full(nb_trs, 255)
         prediction = np.log(prediction + 1e-40)
@@ -59,8 +61,7 @@ class ASCADAttack(AttackModel):
             all_rk_evol[i] = self._rank_compute(predictions_shuffled, plt_shuffled, key, byte=byte)
         all_rk_evol = self.trim_outlier_ranks(all_rk_evol, num=50)
         rk_avg = np.mean(all_rk_evol, axis=0)
-        self.logger.info("Rank Average {}".format(rk_avg))
-        self.logger.info("All Ranks {}".format(all_rk_evol))
+        self.logger.info(f"All Ranks \n {all_rk_evol}")
         return rk_avg
 
     def _plot_model_attack_results(self, model_results_dir_path):

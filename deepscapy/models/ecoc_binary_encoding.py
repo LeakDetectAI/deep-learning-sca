@@ -12,7 +12,7 @@ from keras.regularizers import l2
 from tensorflow_addons.metrics import HammingLoss
 
 from deepscapy.core.sca_nn_model import SCANNModel, ONED_CNN
-from deepscapy.losses.loss_functions import binary_crossentropy_focal_loss
+from deepscapy.losses.test_loss_functions import binary_crossentropy_focal_loss
 from deepscapy.losses.mean_rank import AccuracyMLC, MeanRankMLC
 
 

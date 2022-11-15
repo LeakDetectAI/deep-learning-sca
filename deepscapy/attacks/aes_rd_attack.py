@@ -21,25 +21,26 @@ class AESRDAttack(AttackModel):
                          reshape_type=reshape_type, extension=extension, num_classes=num_classes, n_folds=n_folds,
                          seed=seed, shuffle=shuffle, **kwargs)
         self.offset = np.zeros_like((self.plaintext_ciphertext))
+        self.dataset = AES_RD
 
     def attack(self, X_attack, Y_attack, model_evaluate_args=None, model_predict_args=None):
         super().attack(X_attack=X_attack, Y_attack=Y_attack, model_evaluate_args=model_evaluate_args,
                        model_predict_args=model_predict_args)
 
-    def _rank_compute(self, prediction, att_plt, key, byte):
+    def _rank_compute(self, prediction, plaintext, key, byte):
         (nb_trs, nb_hyp) = prediction.shape
-
+        if self.leakage_model == HW:
+            nb_hyp = 256
         key_log_prob = np.zeros(nb_hyp)
         rank_evol = np.full(nb_trs, 255)
         prediction = np.log(prediction + 1e-40)
 
         for i in range(nb_trs):
             for k in range(nb_hyp):
-                idx = self.AES_SBOX[k ^ att_plt[i, byte]]
+                idx = self.AES_SBOX[k ^ plaintext[i, byte]]
                 if self.leakage_model == HW:
                     idx = self.hw_box[idx]
                 key_log_prob[k] += prediction[i, idx]
-
             rank_evol[i] = self._rk_key(key_log_prob, key[byte])
 
         return rank_evol
@@ -62,8 +63,7 @@ class AESRDAttack(AttackModel):
 
         all_rk_evol = self.trim_outlier_ranks(all_rk_evol, num=50)
         rk_avg = np.mean(all_rk_evol, axis=0)
-        self.logger.info("Rank Average {}".format(rk_avg))
-        self.logger.info("All Ranks {}".format(all_rk_evol))
+        self.logger.info(f"All Ranks \n {all_rk_evol}")
         return rk_avg
 
     def _plot_model_attack_results(self, model_results_dir_path):

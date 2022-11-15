@@ -59,15 +59,10 @@ if __name__ == "__main__":
 
     input_dim = X_profiling.shape[1]
     num_classes = len(np.unique(Y_profiling))
-    # loss_function = loss_dictionary_hpo_models[args.loss_function]
     # metrics = ['accuracy', MeanRank()]
     metrics = ['accuracy']
-
-    if loss_function == RANKING_LOSS:
-        loss = loss_dictionary_rkl_models[dataset_name]
-    else:
-        loss = loss_dictionary_train_models[loss_function]
-
+    loss = loss_dictionary_train_models[loss_function]
+    #loss = loss_dictionary_train_models[FOCAL_LOSS_CER]
     if reshape_type == TWOD_CNN_SQR:
         model_name = '{}_{}_{}_{}_{}_{}'.format(dataset_name.lower(), args_model_name, input_dim,
                                                 'sqr', LF_EXTENSION[loss_function], tuner_type)
@@ -103,15 +98,18 @@ if __name__ == "__main__":
     logger.info(f"Log File {log_path}")
 
     start_time = time.time()
+    verbose = 1
     if tuner_type in [RANDOM_TUNER, BAYESIAN_TUNER]:
-        model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=20, final_model_epochs=epochs - 20,
-                  verbose=0)
+        n_e = 20
+        model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=n_e, final_model_epochs=epochs - n_e,
+                  verbose=verbose)
     elif tuner_type == GREEDY_TUNER:
-        model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=50, final_model_epochs=epochs - 50,
-                  verbose=0)
+        n_e = 50
+        model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=n_e, final_model_epochs=epochs - n_e,
+                  verbose=verbose)
     else:
         model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, final_model_epochs=epochs, epochs=epochs,
-                  verbose=1)
+                  verbose=verbose)
 
 
     logger.info('Best model summary:')

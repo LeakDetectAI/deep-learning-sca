@@ -149,7 +149,7 @@ class ASCADAttackScores:
             for fold_id in range(self.n_folds):
                 fold_id_group = hdf.create_group('fold_id_{}'.format(fold_id))
                 fold_id_group.create_dataset(MEAN_RANKS, data=self.model_mean_ranks[fold_id])
-                fold_id_group.create_dataset(GUESS_ENTROPY, data=self.model_guess_entropy[fold_id])
+                fold_id_group.create_dataset(QTE_NUM_TRACES, data=self.model_guess_entropy[fold_id])
                 fold_id_group.create_dataset(SCORES, data=self.model_scores[fold_id])
                 fold_id_group.create_dataset(MEAN_RANK_FINAL, data=self.model_mean_rank_final[fold_id])
                 fold_id_group.create_dataset(ACCURACY, data=self.model_accuracy[fold_id])

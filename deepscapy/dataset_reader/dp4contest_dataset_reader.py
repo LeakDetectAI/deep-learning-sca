@@ -76,3 +76,6 @@ class DP4ContestDatasetReader(DatasetReader, metaclass=ABCMeta):
 
     def get_meta_data(self):
         return self.mask, self.offset
+
+    def get_train_test_dataset(self):
+        return super(DP4ContestDatasetReader, self).get_train_test_dataset()

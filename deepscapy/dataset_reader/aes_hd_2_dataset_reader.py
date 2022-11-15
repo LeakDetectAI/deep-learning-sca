@@ -7,28 +7,24 @@ import h5py
 import numpy as np
 
 from deepscapy.dataset_reader.dataset_reader import DatasetReader
-from ..constants import ASCAD_DESYNC0, ASCAD_DATASETS
+from ..constants import AES_HDV2_DATASETS, AES_HDV2_NORM, AES_HDV2
 from ..utils import check_file_exists
 
 
-class ASCADDatasetReader(DatasetReader, metaclass=ABCMeta):
-    def __init__(self, dataset_type=ASCAD_DESYNC0, load_key=False, load_metadata=False, **kwargs):
-        super(ASCADDatasetReader, self).__init__(dataset_folder='ASCAD', **kwargs)
-        self.logger = logging.getLogger(ASCADDatasetReader.__name__)
+class AESHDv2DatasetReader(DatasetReader, metaclass=ABCMeta):
+    def __init__(self, dataset_type=AES_HDV2_NORM, load_key=False, load_metadata=False, **kwargs):
+        super(AESHDv2DatasetReader, self).__init__(dataset_folder=AES_HDV2, **kwargs)
+        self.logger = logging.getLogger(AESHDv2DatasetReader.__name__)
         self.load_metadata = load_metadata
         self.load_key = load_key
-        assert (dataset_type in ASCAD_DATASETS), "Dataset Type {} does not exist, only following types" \
-                                                 "exists {}".format(dataset_type, ASCAD_DATASETS)
+        assert (dataset_type in AES_HDV2_DATASETS), f"Dataset Type {dataset_type} does not exist in {AES_HDV2_DATASETS}"
         self.database_file = os.path.join(self.dirname, dataset_type, "{}.h5".format(dataset_type))
 
         if self.load_key:
             self.key_file = os.path.join(self.dirname, dataset_type, "key.npy")
         else:
             self.key_file = ''
-        if 'variable' in dataset_type:
-            self.key_string = '00112233445566778899AABBCCDDEEFF'
-        else:
-            self.key_string = '4DFBE0F27221FE10A78D4ADC8E490469'
+        self.key_string = "2b7e151628aed2a6abf7158809cf4f3c"
         self.logger.info("Dataset File Path {}".format(self.database_file))
         check_file_exists(self.database_file)
         self.__load_dataset__()
@@ -73,6 +69,7 @@ class ASCADDatasetReader(DatasetReader, metaclass=ABCMeta):
             self.key = None
 
         in_file.close()
+
     def get_plaintext_ciphertext(self):
         return self.get_plaintext()
 
@@ -92,4 +89,4 @@ class ASCADDatasetReader(DatasetReader, metaclass=ABCMeta):
         return self.profiling_keys, self.attack_keys
 
     def get_train_test_dataset(self):
-        return super(ASCADDatasetReader, self).get_train_test_dataset()
+        return super(AESHDv2DatasetReader, self).get_train_test_dataset()

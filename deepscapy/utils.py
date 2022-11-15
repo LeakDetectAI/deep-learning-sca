@@ -1,34 +1,31 @@
-import os.path
-
-import h5py
 import inspect
 import json
 import logging
 import multiprocessing
-import numpy as np
 import os
-import pandas as pd
+import os.path
 import random
 import re
 import sys
+
+import h5py
+import numpy as np
+import pandas as pd
 import tensorflow as tf
 from keras import backend as K
-from keras.models import load_model, save_model
 from keras.optimizers import Adam, SGD, RMSprop, Nadam, Adagrad
 from keras.regularizers import l2
-from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 from tensorflow.core.protobuf.config_pb2 import ConfigProto
 from tensorflow.python.client.session import Session
 
-from deepscapy.attacks import *
 from deepscapy.constants import *
 
 __all__ = ['check_file_exists', 'load_ascad', 'get_duration_seconds', 'print_dictionary',
            'setup_random_seed', 'create_dir_recursively', 'get_ascad_dataset', 'setup_logging', 'mean_rank_metric',
            'standardize_features', 'add_best_hp_parameters', 'save_best_hp_to_json', 'load_best_hp_to_dict',
            'get_absolute_path', 'create_directory_safely', 'get_trained_models_path', 'get_results_path',
-           'get_datasets_path', 'get_model_parameters_count', 'TRAINED_MODELS']
+           'get_datasets_path', 'get_model_parameters_count', 'softmax']
 
 
 
@@ -118,8 +115,10 @@ def create_dir_recursively(path, is_file_path=False):
         os.makedirs(path, exist_ok=True)
 
 
-def create_directory_safely(path):
+def create_directory_safely(path, is_file_path=False):
     try:
+        if is_file_path:
+            path = os.path.dirname(path)
         if not os.path.exists(path):
             os.mkdir(path)
     except Exception as e:
@@ -237,14 +236,12 @@ def load_best_hp_to_dict(model_name):
 
 def get_absolute_path():
     if "pc2" in os.environ["HOME"]:
-        absolute_path = os.path.join(os.environ["PFS_FOLDER"], "deep-learning-sca")
+        absolute_path = os.path.join(os.environ["PFS_FOLDERA"], "deep-learning-sca")
     else:
         dirname = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
         absolute_path = os.path.dirname(dirname)
 
     return absolute_path
-
-
 
 
 # ASCAD, AES-HD, AES-SD, DP4-contest
@@ -271,31 +268,6 @@ def get_datasets_path():
     return datasets_path
 
 
-def load_attack_model(model_path, model_name, size_threshold_mb=1000, custom_objects=None):
-    complete_model_path = os.path.join(model_path, '{}.tf'.format(model_name))
-    root_directory = Path(complete_model_path)
-    model_size_mb = sum(f.stat().st_size for f in root_directory.glob('**/*') if f.is_file()) / 1e+6
-
-    if custom_objects is None:
-        attack_model = load_model(complete_model_path)
-    else:
-        attack_model = load_model(complete_model_path, custom_objects=custom_objects)
-
-    if model_size_mb > size_threshold_mb:
-        save_h5_model_path = os.path.join(model_path, '{}.h5'.format(model_name))
-        save_model(attack_model, save_h5_model_path)
-
-        K.clear_session()
-        del attack_model
-
-        if custom_objects is None:
-            attack_model = load_model(save_h5_model_path)
-        else:
-            attack_model = load_model(save_h5_model_path, custom_objects=custom_objects)
-
-    return attack_model
-
-
 def get_model_parameters_count(model):
     stringlist = []
     trainable_params = 0
@@ -303,7 +275,8 @@ def get_model_parameters_count(model):
     total_params = 0
 
     model.summary(print_fn=lambda x: stringlist.append(x))
-
+    conv_layers = []
+    dense_layers = []
     for line in stringlist:
         if 'Total params:' in line:
             total_params = int(line.split('Total params: ')[1].replace(',', ''))
@@ -311,5 +284,38 @@ def get_model_parameters_count(model):
             trainable_params = int(line.split('Trainable params: ')[1].replace(',', ''))
         if 'Non-trainable params: ' in line:
             non_trainable_params = int(line.split('Non-trainable params: ')[1].replace(',', ''))
+        if 'Conv' in line:
+            conv_layers.append(line)
+        if 'Dense' in line:
+            dense_layers.append(line)
+    n_conv_layers = len(conv_layers)
+    n_dense_layers = len(dense_layers)
+    return trainable_params, non_trainable_params, total_params, n_conv_layers, n_dense_layers
 
-    return trainable_params, non_trainable_params, total_params
+
+def get_h5py_tree(hdf):
+    dd = {}
+
+    def extract(name, node):
+        if isinstance(node, h5py.Dataset):
+            dd[name] = node[...]
+        return None
+
+    hdf.visititems(extract)
+    return dd
+
+
+def logsumexp(x, axis=1):
+    max_x = x.max(axis=axis, keepdims=True)
+    return max_x + np.log(np.sum(np.exp(x - max_x), axis=axis, keepdims=True))
+
+
+def softmax(x, axis=1):
+    """
+    Take softmax for the given numpy array.
+    :param axis: The axis around which the softmax is applied
+    :param x: array-like, shape (n_samples, ...)
+    :return: softmax taken around the given axis
+    """
+    lse = logsumexp(x, axis=axis)
+    return np.exp(x - lse)

@@ -3,6 +3,8 @@ import numpy as np
 from deepscapy.constants import *
 from deepscapy.dataset_reader import *
 from deepscapy.losses.loss_functions import *
+from deepscapy.losses.test_loss_functions import binary_crossentropy_focal_loss, binary_crossentropy_focal_loss_ratio, \
+    bce_dice_loss
 from deepscapy.models import *
 
 __all__ = ['LF_EXTENSION', 'model_dictionary', 'cnn_rkl_baseline_dictionary', 'datasets',
@@ -37,12 +39,15 @@ cnn_rkl_baseline_dictionary = {ASCAD_DESYNC0: CNNRankingLossASCADDesync0Baseline
                                ASCAD_DESYNC0_VARIABLE: CNNRankingLossASCADDesync0Baseline,
                                ASCAD_DESYNC50_VARIABLE: CNNRankingLossASCADDesync50Baseline,
                                ASCAD_DESYNC100_VARIABLE: CNNRankingLossASCADDesync100Baseline,
+                               AES_HDV2_NORM: CNNRankingLossAESHDBaseline,
+                               AES_HDV2_EXT: CNNRankingLossAESHDBaseline
                                }
 
 datasets = {ASCAD_DESYNC0: ASCADDatasetReader, ASCAD_DESYNC50: ASCADDatasetReader, ASCAD_DESYNC100: ASCADDatasetReader,
             ASCAD_DESYNC0_VARIABLE: ASCADDatasetReader, ASCAD_DESYNC50_VARIABLE: ASCADDatasetReader,
             ASCAD_DESYNC100_VARIABLE: ASCADDatasetReader, CHES_CTF: CHESCTFDatasetReader, AES_HD: AESHDDatasetReader,
-            AES_RD: AESRDDatasetReader, DP4_CONTEST: DP4ContestDatasetReader}
+            AES_RD: AESRDDatasetReader, DP4_CONTEST: DP4ContestDatasetReader, AES_HDV2_NORM: AESHDv2DatasetReader,
+            AES_HDV2_EXT: AESHDv2DatasetReader}
 
 
 # if "pc2" in os.environ["HOME"]:
@@ -60,11 +65,11 @@ datasets = {ASCAD_DESYNC0: ASCADDatasetReader, ASCAD_DESYNC50: ASCADDatasetReade
 # FOCAL_LOSS: sigmoid_focal_loss,
 loss_dictionary_train_models = {CATEGORICAL_CROSSENTROPY_LOSS: CATEGORICAL_CROSSENTROPY_LOSS,
                                 CROSS_ENTROPY_RATIO: cross_entropy_ratio(),
-                                # RANKING_LOSS: ranking_loss(),
+                                RANKING_LOSS: ranking_loss_optimized(alpha_value=1),
                                 DICE_BCE_LOSS: bce_dice_loss(),
                                 FOCAL_LOSS_BE: binary_crossentropy_focal_loss(),
-                                FOCAL_LOSS_CE: categorical_crossentropy_focal_loss(),
                                 FOCAL_LOSS_BER: binary_crossentropy_focal_loss_ratio(),
+                                FOCAL_LOSS_CE: categorical_crossentropy_focal_loss(),
                                 FOCAL_LOSS_CER: categorical_crossentropy_focal_loss_ratio()
                                 }
 

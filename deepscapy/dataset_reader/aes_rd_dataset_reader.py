@@ -59,3 +59,6 @@ class AESRDDatasetReader(DatasetReader, metaclass=ABCMeta):
 
     def get_key(self):
         return self.key
+
+    def get_train_test_dataset(self):
+        return super(AESRDDatasetReader, self).get_train_test_dataset()

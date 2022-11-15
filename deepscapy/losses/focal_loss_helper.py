@@ -1,7 +1,7 @@
 import tensorflow as tf
 from keras import backend as K
 from tensorflow_addons.utils.types import FloatTensorLike, TensorLike
-
+from tensorflow_addons.losses import sigmoid_focal_crossentropy
 @tf.function
 def sigmoid_focal_crossentropy(
         y_true: TensorLike,
@@ -54,7 +54,11 @@ def sigmoid_focal_crossentropy(
     else:
         pred_prob = y_pred
 
-    p_t = (y_true * pred_prob) + ((1 - y_true) * (1 - pred_prob))
+    if base_loss == 'categorical_crossentropy':
+        p_t = (y_true * pred_prob)
+    else:
+        p_t = (y_true * pred_prob) + ((1 - y_true) * (1 - pred_prob))
+
     alpha_factor = 1.0
     modulating_factor = 1.0
 

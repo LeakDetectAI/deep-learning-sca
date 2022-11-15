@@ -87,3 +87,6 @@ class CHESCTFDatasetReader(DatasetReader, metaclass=ABCMeta):
 
     def get_keys(self):
         return self.profiling_keys, self.attack_keys
+
+    def get_train_test_dataset(self):
+        return super(CHESCTFDatasetReader, self).get_train_test_dataset()

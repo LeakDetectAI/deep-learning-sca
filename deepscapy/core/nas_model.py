@@ -3,6 +3,7 @@ import math
 import os
 
 import numpy as np
+from keras.saving.save import load_model
 from sklearn.base import BaseEstimator, ClassifierMixin
 from tensorflow.python.keras.utils.np_utils import to_categorical
 
@@ -55,8 +56,8 @@ class NASModel(BaseEstimator, ClassifierMixin):
 
         self.best_model_file_path = os.path.join(get_trained_models_path(folder=TRAINED_MODELS_NAS_NEW),
                                                  f'{model_name}.tf')
-        self.logger.info("Nas Model Directory {} Project Name {}".format(self.directory, self.project_name))
-        self.logger.info("Best Model stored at {}".format(self.best_model_file_path))
+        self.logger.info(f"Nas Model Directory {self.directory} Project Name {self.project_name}")
+        self.logger.info(f"Best Model stored at {self.best_model_file_path}")
 
         self.n_filters = [2, 8, 16, 32, 64, 128, 256]
         self.n_units = [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024]
@@ -106,12 +107,13 @@ class NASModel(BaseEstimator, ClassifierMixin):
         self.logger.info("Remaining Trials for the tuner are {}".format(self.auto_model.tuner.remaining_trials))
         self.auto_model.fit(X, y, verbose=verbose, epochs=epochs, batch_size=batch_size,
                             validation_split=validation_split, callbacks=callbacks, **kwargs)
-        # print(history)
-        # model_path = os.path.join(self.directory, self.project_name, 'best_model')
-        # custom_objects = {'MeanRank': MeanRank}
-        # self.best_model = load_model(model_path, custom_objects=custom_objects, compile=False)
-        self.best_model = self.auto_model.export_model()
-        # self.best_model.compile(loss=self.loss_function, metrics=self.metrics)
+        if str(self.loss_function) != 'categorical_crossentropy':
+            model_path = os.path.join(self.directory, self.project_name, 'best_model')
+            custom_objects = {'loss': self.loss_function}
+            self.best_model = load_model(model_path, custom_objects=custom_objects)
+            # self.best_model.compile(loss=self.loss_function, metrics=self.metrics)
+        else:
+            self.best_model = self.auto_model.export_model()
         if self.tuner in [GREEDY_TUNER, RANDOM_TUNER, BAYESIAN_TUNER]:
             self.best_model.fit(X, y, verbose=1, epochs=final_model_epochs, batch_size=batch_size, callbacks=callbacks)
         self.best_model.save(self.best_model_file_path)

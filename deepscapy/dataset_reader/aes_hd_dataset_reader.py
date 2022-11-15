@@ -57,3 +57,6 @@ class AESHDDatasetReader(DatasetReader, metaclass=ABCMeta):
 
     def get_key(self):
         return self.key
+
+    def get_train_test_dataset(self):
+        return super(AESHDDatasetReader, self).get_train_test_dataset()

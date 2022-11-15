@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 import h5py
 import matplotlib.pyplot as plot
 import numpy as np
-from keras.saving.save import load_model
+from keras.models import load_model
 from sklearn.utils import check_random_state
 
 from deepscapy.constants import *
@@ -13,8 +13,7 @@ from deepscapy.core import NASModel
 from deepscapy.experimental_utils import loss_dictionary_train_models, loss_dictionary_attack_models, \
     loss_dictionary_rkl_models
 from deepscapy.utils import get_results_path, create_directory_safely, load_best_hp_to_dict, get_trained_models_path, \
-    get_model_parameters_count
-
+    get_model_parameters_count, softmax
 
 
 class AttackModel(metaclass=ABCMeta):
@@ -46,29 +45,38 @@ class AttackModel(metaclass=ABCMeta):
         self.model_mean_ranks = np.zeros((self.n_folds, self.num_traces))
         self.model_mean_rank_final = np.zeros(self.n_folds)
         self.model_accuracy = np.zeros(self.n_folds)
-        self.model_guess_entropy = np.zeros(self.n_folds)
-        self.model_guess_entropy_3 = np.zeros(self.n_folds)
-        self.model_guess_entropy_5 = np.zeros(self.n_folds)
-        self.model_guess_entropy_10 = np.zeros(self.n_folds)
+        self.model_qte_traces = np.zeros(self.n_folds)
+        self.model_qte_traces_3 = np.zeros(self.n_folds)
+        self.model_qte_traces_5 = np.zeros(self.n_folds)
+        self.model_qte_traces_10 = np.zeros(self.n_folds)
         self.model_scores = np.zeros((self.n_folds, self.num_traces, self.num_classes))
         self.trainable_params = 0
         self.non_trainable_params = 0
         self.total_params = 0
+        self.n_conv_layers = 0
+        self.n_dense_layers = 0
         self.model = None
         self.model_min_complete_mean_rank = np.zeros(self.n_folds)
         self.model_last_index_mean_rank = np.zeros(self.n_folds)
         self.model_min_last_100_mean_rank = np.zeros(self.n_folds)
         self.hw_box = [bin(x).count("1") for x in range(256)]
+        self.dataset = None
 
     def attack(self, X_attack, Y_attack, model_evaluate_args, model_predict_args):
         # Load model for attack
         self.model = self._load_attack_model_()
         self.model.summary(print_fn=self.logger.info)
-
-        self.trainable_params, self.non_trainable_params, self.total_params = get_model_parameters_count(self.model)
-        self.logger.info('Trainable params for model {} = {}'.format(self.model_name, self.trainable_params))
-        self.logger.info('Non-trainable params for model {} = {}'.format(self.model_name, self.non_trainable_params))
-        self.logger.info('Total params for model {} = {}'.format(self.model_name, self.total_params))
+        for tuner_type in TUNER_TYPES:
+            if tuner_type in self.model_name:
+                self.logger.info(f"Tuner Type is {tuner_type}")
+                break
+        self.trainable_params, self.non_trainable_params, self.total_params, self.n_conv_layers, self.n_dense_layers \
+            = get_model_parameters_count(self.model)
+        self.logger.info(f'Trainable params for model  {self.model_name} = {self.trainable_params}')
+        self.logger.info(f'Non-trainable params for model {self.model_name} = {self.non_trainable_params}')
+        self.logger.info(f'Total params for model {self.model_name} = {self.total_params}')
+        self.logger.info(f'Convolutional layers for model {self.model_name} = {self.n_conv_layers}')
+        self.logger.info(f'Dense layers for model {self.model_name} = {self.n_dense_layers}')
 
         for fold_id in range(self.n_folds):
             X_attack_fold = X_attack[fold_id * self.num_traces:(fold_id + 1) * self.num_traces]
@@ -79,65 +87,72 @@ class AttackModel(metaclass=ABCMeta):
             input_dim = X_attack.shape[1]
 
             if issubclass(self.model_class, NASModel):
+                if self.loss_name == RANKING_LOSS:
+                    loss = loss_dictionary_rkl_models[self.dataset]
+                else:
+                    loss = loss_dictionary_train_models[self.loss_name]
                 custom_model = self.model_class(model_name=self.model_name, num_classes=self.num_classes,
-                                                input_dim=input_dim, dataset=DP4_CONTEST,
-                                                reshape_type=self.reshape_type)
+                                                loss_function=loss, loss_function_name=self.loss_name,
+                                                input_dim=input_dim, dataset=self.dataset, tuner=tuner_type,
+                                                leakage_model=self.leakage_model, reshape_type=self.reshape_type)
             else:
                 custom_model = self.model_class(model_name=self.model_name, num_classes=self.num_classes,
                                                 input_dim=input_dim)
 
             X_attack_fold, Y_attack_fold = custom_model.reshape_inputs(X_attack_fold, Y_attack_fold)
 
-            if model_evaluate_args is not None:
-                model_metrics = self.model.evaluate(X_attack_fold, Y_attack_fold, **model_evaluate_args)
-            else:
-                model_metrics = self.model.evaluate(X_attack_fold, Y_attack_fold)
-
-            self.model_accuracy[fold_id] = model_metrics[1]
-
             self.logger.info('*****************************************************************************')
             self.logger.info('Performing attack using model {} for Fold {}'.format(self.model_name, fold_id))
-            self.logger.info('Fold {}: accuracy for model {} = {}'.format(fold_id, self.model_name, model_metrics[1]))
 
             if model_predict_args is not None:
-                self.model_scores[fold_id] = self.model.predict(X_attack_fold, **model_predict_args)
+                predictions = self.model.predict(X_attack_fold, **model_predict_args)
             else:
-                self.model_scores[fold_id] = self.model.predict(X_attack_fold)
-            predictions = self.model_scores[fold_id]
+                predictions = self.model.predict(X_attack_fold)
+            if self.loss_name == RANKING_LOSS and issubclass(self.model_class, NASModel):
+                predictions = softmax(predictions, axis=1)
+            model_accuracy = np.mean(np.argmax(predictions, axis=1) == np.argmax(Y_attack_fold, axis=1))
+            self.model_scores[fold_id] = predictions
+            self.model_accuracy[fold_id] = model_accuracy
+            self.logger.info(f'Fold {fold_id}: accuracy = {model_accuracy}')
 
-            avg_rank = self._perform_attacks_(predictions=predictions, plain_cipher_fold=plain_cipher_fold,
-                                              offset_fold=offset_fold)
-            self.model_mean_ranks[fold_id] = avg_rank
+            guess_entropy_evol = self._perform_attacks_(predictions=predictions, plain_cipher_fold=plain_cipher_fold,
+                                                        offset_fold=offset_fold)
+            #guess_entropy_evol = np.sort(guess_entropy_evol)[::-1]
+            self.logger.info(f"Guess Entropy {guess_entropy_evol}")
+            self.model_mean_ranks[fold_id] = guess_entropy_evol
             self.model_mean_rank_final[fold_id] = np.mean(self.model_mean_ranks[fold_id])
             self.model_min_complete_mean_rank[fold_id] = np.amin(self.model_mean_ranks[fold_id])
             self.model_last_index_mean_rank[fold_id] = self.model_mean_ranks[fold_id][-1]
             self.model_min_last_100_mean_rank[fold_id] = np.amin(self.model_mean_ranks[fold_id][self.num_traces - 100:])
 
             rank = self.model_mean_rank_final[fold_id]
-            self.logger.info('Fold {}: final mean rank for model {} = {}'.format(fold_id, self.model_name, rank))
+            self.logger.info(f'Fold {fold_id}: final mean rank for model = {rank}')
             rank = self.model_min_complete_mean_rank[fold_id]
-            self.logger.info('Fold {}: min complete mean rank for model {} = {}'.format(fold_id, self.model_name, rank))
+            self.logger.info(f'Fold {fold_id}: min complete mean rank for model = {rank}')
             rank = self.model_last_index_mean_rank[fold_id]
-            self.logger.info('Fold {}: last index mean rank for model {} = {}'.format(fold_id, self.model_name, rank))
+            self.logger.info(f'Fold {fold_id}: last index mean rank for model = {rank}')
             rank = self.model_min_last_100_mean_rank[fold_id]
-            self.logger.info('Fold {}: min last 100 mean rank for model {} = {}'.format(fold_id, self.model_name, rank))
-            def get_value(avg_rank, n):
-                if np.argmax(avg_rank <= n) == 0:
+            self.logger.info(f'Fold {fold_id}: min last 100 mean rank for model = {rank}')
+
+            def get_value(guess_entropy_evol, n):
+                if not np.any(guess_entropy_evol <= n):
                     return self.num_traces
                 else:
-                    return np.argmax(avg_rank <= n)
-            self.model_guess_entropy[fold_id] = get_value(avg_rank, 0)
-            self.model_guess_entropy_3[fold_id] = get_value(avg_rank, 2)
-            self.model_guess_entropy_5[fold_id] = get_value(avg_rank, 4)
-            self.model_guess_entropy_10[fold_id] = get_value(avg_rank, 9)
-            self.logger.info('Fold {}: model {} GE smaller that 1: {}'.format(fold_id, self.model_name,
-                                                                              self.model_guess_entropy[fold_id]))
-            self.logger.info('Fold {}: model {} GE smaller that 3: {}'.format(fold_id, self.model_name,
-                                                                              self.model_guess_entropy_3[fold_id]))
-            self.logger.info('Fold {}: model {} GE smaller that 5: {}'.format(fold_id, self.model_name,
-                                                                              self.model_guess_entropy_5[fold_id]))
-            self.logger.info('Fold {}: model {} GE smaller that 10: {}'.format(fold_id, self.model_name,
-                                                                               self.model_guess_entropy_10[fold_id]))
+                    return np.argmax(guess_entropy_evol <= n) + 1
+
+            self.model_qte_traces[fold_id] = get_value(guess_entropy_evol, 0.0)
+            self.model_qte_traces_3[fold_id] = get_value(guess_entropy_evol, 2.0)
+            self.model_qte_traces_5[fold_id] = get_value(guess_entropy_evol, 4.0)
+            self.model_qte_traces_10[fold_id] = get_value(guess_entropy_evol, 9.0)
+            self.logger.info('Fold {}: model {} QTE for GE smaller that 1: {}'.format(fold_id, self.model_name,
+                                                                                      self.model_qte_traces[fold_id]))
+            self.logger.info('Fold {}: model {} QTE for GE smaller that 3: {}'.format(fold_id, self.model_name,
+                                                                                      self.model_qte_traces_3[fold_id]))
+            self.logger.info('Fold {}: model {} QTE for GE smaller that 5: {}'.format(fold_id, self.model_name,
+                                                                                      self.model_qte_traces_5[fold_id]))
+            self.logger.info('Fold {}: model {} QTE for GE smaller that 10: {}'.format(fold_id, self.model_name,
+                                                                                       self.model_qte_traces_10[
+                                                                                           fold_id]))
 
         self._store_results()
 
@@ -204,7 +219,11 @@ class AttackModel(metaclass=ABCMeta):
         for col in all_rk_evol.T:
             col = col[np.argpartition(col, num + 1)[:num]]
             b.append(col)
-        return np.array(b).T
+        rk_evol = np.array(b).T
+        self.logger.info(f"Sorted Ranks: {np.sort(rk_evol)[:, ::-1]}")
+        # if self.leakage_model == HW:
+        #    rk_evol = np.sort(rk_evol)[:, ::-1]
+        return rk_evol
 
     def _store_results(self, dataset=AES_HD):
         # Store the final evaluated results to .npy files & .svg file
@@ -227,20 +246,23 @@ class AttackModel(metaclass=ABCMeta):
             model_params_group.create_dataset(TRAINABLE_PARAMS, data=self.trainable_params)
             model_params_group.create_dataset(NON_TRAINABLE_PARAMS, data=self.non_trainable_params)
             model_params_group.create_dataset(TOTAL_PARAMS, data=self.total_params)
+            model_params_group.create_dataset(N_CONV_LAYERS, data=self.n_conv_layers)
+            model_params_group.create_dataset(N_DENSE_LAYERS, data=self.n_dense_layers)
 
             for fold_id in range(self.n_folds):
                 fold_id_group = hdf.create_group('fold_id_{}'.format(fold_id))
                 fold_id_group.create_dataset(MEAN_RANKS, data=self.model_mean_ranks[fold_id])
-                fold_id_group.create_dataset(GUESS_ENTROPY, data=self.model_guess_entropy[fold_id])
-                fold_id_group.create_dataset(GUESS_ENTROPY + '3', data=self.model_guess_entropy_3[fold_id])
-                fold_id_group.create_dataset(GUESS_ENTROPY + '5', data=self.model_guess_entropy_5[fold_id])
-                fold_id_group.create_dataset(GUESS_ENTROPY + '10', data=self.model_guess_entropy_10[fold_id])
+                fold_id_group.create_dataset(QTE_NUM_TRACES, data=self.model_qte_traces[fold_id])
+                fold_id_group.create_dataset(QTE_NUM_TRACES + '3', data=self.model_qte_traces_3[fold_id])
+                fold_id_group.create_dataset(QTE_NUM_TRACES + '5', data=self.model_qte_traces_5[fold_id])
+                fold_id_group.create_dataset(QTE_NUM_TRACES + '10', data=self.model_qte_traces_10[fold_id])
                 fold_id_group.create_dataset(SCORES, data=self.model_scores[fold_id])
                 fold_id_group.create_dataset(MEAN_RANK_FINAL, data=self.model_mean_rank_final[fold_id])
                 fold_id_group.create_dataset(ACCURACY, data=self.model_accuracy[fold_id])
                 fold_id_group.create_dataset(MIN_COMPLETE_MEAN_RANK, data=self.model_min_complete_mean_rank[fold_id])
                 fold_id_group.create_dataset(LAST_INDEX_MEAN_RANK, data=self.model_last_index_mean_rank[fold_id])
                 fold_id_group.create_dataset(MIN_LAST_100_MEAN_RANK, data=self.model_min_last_100_mean_rank[fold_id])
+            hdf.close()
 
         self._plot_model_attack_results(results_path)
 
@@ -274,13 +296,6 @@ class AttackModel(metaclass=ABCMeta):
             self.logger.info("Model stored at {}".format(model_file_name))
             if self.loss_name == CATEGORICAL_CROSSENTROPY_LOSS:
                 attack_model = load_model(model_file_name)
-            elif self.loss_name == RANKING_LOSS:
-                if dataset == ASCAD:
-                    custom_objects = {'loss': loss_dictionary_rkl_models[self.dataset_type]}
-                else:
-                    custom_objects = {'loss': loss_dictionary_rkl_models[dataset]}
-                attack_model = load_model(model_file_name, custom_objects=custom_objects)
-
             else:
                 custom_objects = {'loss': loss_dictionary_train_models[self.loss_name]}
                 attack_model = load_model(model_file_name, custom_objects=custom_objects)
