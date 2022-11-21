@@ -11,7 +11,7 @@ Installation
 ------------
 The latest release version of deepsca can be installed from Github as follows::
 	
-	pip install git+https://github.com/prithagupta/deep-learning-sca.git
+	pip install git+https://github.com/anonymousupta/deep-learning-sca.git
 
 Another option is to clone the repository and install deepsca using::
 
@@ -26,4 +26,4 @@ For data processing and generation you will also need and pandas.
 
 License
 --------
-[Apache License, Version 2.0](https://github.com/prithagupta/deep-learning-sca/blob/main/LICENSE)
+[Apache License, Version 2.0](https://github.com/anonymousupta/deep-learning-sca/blob/main/LICENSE)

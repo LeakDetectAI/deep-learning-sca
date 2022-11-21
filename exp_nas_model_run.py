@@ -13,8 +13,6 @@ if __name__ == "__main__":
     # Make results deterministic
     seed = 1234
     os.environ['PYTHONHASHSEED'] = str(seed)
-    # os.environ["WANDB_API_KEY"] = "e1cd10bac622be84198c705e89f0209dd0fc0ac2"
-    # os.environ["WANDB_MODE"] = "online"
     # Argument parser
     parser = argparse.ArgumentParser(description='Model HP Tuner & Model Training')
     parser.add_argument('--dataset', type=str, required=True,

@@ -8,8 +8,8 @@
 #SBATCH -A hpc-prf-obal
 #SBATCH -t 4-00:00:00
 #SBATCH -p gpu
-#SBATCH -o /scratch/hpc-prf-obal/prithag/clusterout/%x-%j
-#SBATCH -e /scratch/hpc-prf-obal/prithag/clusterout/%x-%j
+#SBATCH -o /scratch/hpc-prf-obal/anonymous/clusterout/%x-%j
+#SBATCH -e /scratch/hpc-prf-obal/anonymous/clusterout/%x-%j
 
 cd $PFS_FOLDER/deep-learning-sca/
 module reset

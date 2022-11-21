@@ -2,7 +2,7 @@
 name = "deepscapy"
 version = "0.1.0"
 description = ""
-authors = ["Varun Nandkumar Golani <vngolani@mail.uni-paderborn.de>"]
+authors = ["Anonymous <anonymous@anonymous>"]
 
 [tool.poetry.dependencies]
 python = "3.9.2"
