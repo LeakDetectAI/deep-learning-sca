@@ -1,4 +1,4 @@
-# deep-learning-sca: Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search
+# A Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search
 
 
 
