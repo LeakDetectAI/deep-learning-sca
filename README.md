@@ -26,4 +26,4 @@ For data processing and generation you will also need and pandas.
 
 License
 --------
-[Apache License, Version 2.0](https://github.com/kiudee/cs-ranking/blob/master/LICENSE)
+[Apache License, Version 2.0](https://github.com/prithagupta/deep-learning-sca/blob/main/LICENSE)
