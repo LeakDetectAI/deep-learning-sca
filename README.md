@@ -1,8 +1,8 @@
-# deep-learning-sca: Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search]{Long Paper: Automated Side-Channel Attacks using Black-Box Neural Architecture Search
+# deep-learning-sca: Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search
 
 
 
-ML-ILD
+deepscapy
 ------------
 
 deepscapy is the package is able to automatically finding an optimal architecture in order to perform a side channel attack.
