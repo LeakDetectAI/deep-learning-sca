@@ -9,11 +9,11 @@ deepscapy is the package is able to automatically finding an optimal architectur
 
 Installation
 ------------
-The latest release version of CS-Rank can be installed from Github as follows::
+The latest release version of deepsca can be installed from Github as follows::
 	
 	pip install git+https://github.com/prithagupta/deep-learning-sca.git
 
-Another option is to clone the repository and install MI-ILD using::
+Another option is to clone the repository and install deepsca using::
 
 	python setup.py install
 
