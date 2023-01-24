@@ -1,5 +1,0 @@
-bash AES_HD_train_models_1D.sh
-bash AES_RD_train_models_1D.sh
-bash ASCAD_train_models_1D.sh
-bash DP4CONTEST_train_models_1D.sh
-bash CHES_CTF_train_models_1D.sh
