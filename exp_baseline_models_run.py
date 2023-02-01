@@ -120,10 +120,8 @@ if __name__ == "__main__":
     else:
         model_class = model_dictionary[model_name]
 
-    if model_name == CNN_ZAID_BASELINE and (dataset_name == ASCAD_DESYNC0 or dataset_name == AES_HD):
-        X_profiling, X_attack = standardize_features(X_profiling, X_attack)
-
-    if model_name == CNN_ZAID_BASELINE and dataset_name == DP4_CONTEST:
+    if model_name == CNN_ZAID_BASELINE and (dataset_name == DP4_CONTEST or dataset_name == AES_HD or \
+                                            dataset_name == ASCAD_DESYNC0 or dataset_name == ASCAD_DESYNC0_VARIABLE):
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='standard')
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='minmax')
 
@@ -157,67 +155,66 @@ if __name__ == "__main__":
 
     check_if_exist = check_if_model_trained(model_name, loss_function, dataset_name)
 
-    if not check_if_exist:
-        log_path = os.path.join(os.getcwd(), 'logs', f'{model_name}.log')
-        create_dir_recursively(log_path, is_file_path=True)
-        logger = setup_logging(log_path=log_path)
-        setup_random_seed(seed=seed)
-        logger.info('Model name {}'.format(model_name))
-        config = vars(arguments)
-        logger.info("Arguments {}".format(print_dictionary(config)))
-        print(log_path)
+    log_path = os.path.join(os.getcwd(), 'logs', f'{model_name}.log')
+    create_dir_recursively(log_path, is_file_path=True)
+    logger = setup_logging(log_path=log_path)
+    setup_random_seed(seed=seed)
+    logger.info('Model name {}'.format(model_name))
+    config = vars(arguments)
+    logger.info("Arguments {}".format(print_dictionary(config)))
+    print(log_path)
 
-        if loss_function == RANKING_LOSS:
-            learner_params['loss_function'] = loss_dictionary_rkl_models[dataset_name]
-        else:
-            learner_params['loss_function'] = loss_dictionary_train_models[loss_function]
-
-        learner_params['model_name'] = model_name
-        learner_params['weight_averaging'] = weight_averaging
-
-        start_time = time.time()
-        if use_tuner:
-            if loss_function in [FOCAL_LOSS_BE, FOCAL_LOSS_CE, RANKING_LOSS]:
-                epochs_hpo = 20
-                objective = kt.Objective("val_accuracy", direction="min")
-                file_name = 'hypermodel_{}'.format(loss_function)
-                directory = os.path.join(get_trained_models_path(TRAINED_HYPERMODEL), file_name)
-                learner_params_copy = copy.deepcopy(learner_params)
-                model_class_copy = copy.deepcopy(model_class)
-                mod = model_class_copy(**learner_params_copy)
-                x_train, y_train = mod.reshape_inputs(X_profiling_train, Y_profiling_train)
-                x_val, y_val = mod.reshape_inputs(X_profiling_val, Y_profiling_val)
-                max_trials = 30
-            loss_params = None
-            if loss_function in [FOCAL_LOSS_BE, FOCAL_LOSS_CE]:
-                hpo_hypermodel_loss = HPOModelLoss(learner=model_class_copy, learner_params=learner_params_copy,
-                                                   hp_dict=focal_loss_dict, lf_name=loss_function)
-                tuner = HPOModelTuner(hypermodel=hpo_hypermodel_loss, objective="val_accuracy", max_trials=max_trials,
-                                      overwrite=False, directory=directory, project_name=model_name)
-                tuner.search(x_train, y_train, epochs=epochs_hpo, batch_size=batch_size, validation_data=(x_val, y_val))
-                tuner.results_summary(num_trials=max_trials)
-                best_hp_loss = tuner.get_best_hyperparameters()[0]
-                loss_params = dict(alpha=best_hp_loss.get('alpha'), gamma=best_hp_loss.get('gamma'), from_logits=False)
-
-            elif loss_function == RANKING_LOSS:
-                hpo_hypermodel_loss = HPOModelLoss(learner=model_class_copy, learner_params=learner_params_copy,
-                                                   hp_dict=rkl_loss_dict, lf_name=loss_function)
-                tuner = HPOModelTuner(hypermodel=hpo_hypermodel_loss, objective="val_accuracy", max_trials=max_trials,
-                                      overwrite=False, directory=directory, project_name=model_name)
-                tuner.search(x_train, y_train, epochs=epochs_hpo, batch_size=batch_size, validation_data=(x_val, y_val))
-                tuner.results_summary(num_trials=max_trials)
-                best_hp_loss = tuner.get_best_hyperparameters()[0]
-                loss_params = dict(alpha_value=best_hp_loss.get('alpha_value'))
-            if loss_params is not None:
-                with open('{}/{}.json'.format(get_trained_models_path(folder=HP_TRAINED_MODELS_TUNED), model_name),
-                          'w') as f:
-                    json.dump(loss_params, f, sort_keys=True, indent=4)
-                logger.info("Loss {}, best parameters {}".format(loss_function, print_dictionary(loss_params)))
-                learner_params['loss_function'] = loss_dictionary_attack_models[loss_function](**loss_params)
-        model = model_class(**learner_params)
-        model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=epochs, verbose=1)
-        end_time = time.time()
-        time_taken = timedelta(seconds=(end_time - start_time))
-        logger.info('The total time elapsed for model {} is {}'.format(model_name, time_taken))
+    if loss_function == RANKING_LOSS:
+        learner_params['loss_function'] = loss_dictionary_rkl_models[dataset_name]
     else:
-        print(f"Model {model_name} already Trained")
+        learner_params['loss_function'] = loss_dictionary_train_models[loss_function]
+
+    learner_params['model_name'] = model_name
+    learner_params['weight_averaging'] = weight_averaging
+
+    start_time = time.time()
+    if use_tuner:
+        if loss_function in [FOCAL_LOSS_BE, FOCAL_LOSS_CE, RANKING_LOSS]:
+            epochs_hpo = 20
+            objective = kt.Objective("val_accuracy", direction="min")
+            file_name = 'hypermodel_{}'.format(loss_function)
+            directory = os.path.join(get_trained_models_path(TRAINED_HYPERMODEL), file_name)
+            learner_params_copy = copy.deepcopy(learner_params)
+            model_class_copy = copy.deepcopy(model_class)
+            mod = model_class_copy(**learner_params_copy)
+            x_train, y_train = mod.reshape_inputs(X_profiling_train, Y_profiling_train)
+            x_val, y_val = mod.reshape_inputs(X_profiling_val, Y_profiling_val)
+            max_trials = 30
+        loss_params = None
+        if loss_function in [FOCAL_LOSS_BE, FOCAL_LOSS_CE]:
+            hpo_hypermodel_loss = HPOModelLoss(learner=model_class_copy, learner_params=learner_params_copy,
+                                               hp_dict=focal_loss_dict, lf_name=loss_function)
+            tuner = HPOModelTuner(hypermodel=hpo_hypermodel_loss, objective="val_accuracy", max_trials=max_trials,
+                                  overwrite=False, directory=directory, project_name=model_name)
+            tuner.search(x_train, y_train, epochs=epochs_hpo, batch_size=batch_size, validation_data=(x_val, y_val))
+            tuner.results_summary(num_trials=max_trials)
+            best_hp_loss = tuner.get_best_hyperparameters()[0]
+            loss_params = dict(alpha=best_hp_loss.get('alpha'), gamma=best_hp_loss.get('gamma'), from_logits=False)
+
+        elif loss_function == RANKING_LOSS:
+            hpo_hypermodel_loss = HPOModelLoss(learner=model_class_copy, learner_params=learner_params_copy,
+                                               hp_dict=rkl_loss_dict, lf_name=loss_function)
+            tuner = HPOModelTuner(hypermodel=hpo_hypermodel_loss, objective="val_accuracy", max_trials=max_trials,
+                                  overwrite=False, directory=directory, project_name=model_name)
+            tuner.search(x_train, y_train, epochs=epochs_hpo, batch_size=batch_size, validation_data=(x_val, y_val))
+            tuner.results_summary(num_trials=max_trials)
+            best_hp_loss = tuner.get_best_hyperparameters()[0]
+            loss_params = dict(alpha_value=best_hp_loss.get('alpha_value'))
+        if loss_params is not None:
+            with open('{}/{}.json'.format(get_trained_models_path(folder=HP_TRAINED_MODELS_TUNED), model_name),
+                      'w') as f:
+                json.dump(loss_params, f, sort_keys=True, indent=4)
+            logger.info("Loss {}, best parameters {}".format(loss_function, print_dictionary(loss_params)))
+            learner_params['loss_function'] = loss_dictionary_attack_models[loss_function](**loss_params)
+    model = model_class(**learner_params)
+    model.fit(X=X_profiling, y=Y_profiling, batch_size=batch_size, epochs=epochs, verbose=1)
+    end_time = time.time()
+    time_taken = timedelta(seconds=(end_time - start_time))
+    logger.info('The total time elapsed for model {} is {}'.format(model_name, time_taken))
+    if check_if_exist:
+        logger.info(f"Model {model_name} already Trained")
