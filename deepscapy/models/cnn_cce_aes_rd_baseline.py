@@ -5,6 +5,7 @@ from keras.optimizers import Adam
 from deepscapy.constants import ONED_CNN
 from deepscapy.core.sca_nn_model import SCANNModel
 
+
 class CNNCCEAESRDBaseline(SCANNModel):
     def __init__(self, model_name, num_classes, input_dim, loss_function='categorical_crossentropy',
                  kernel_regularizer=None, kernel_initializer="he_uniform", optimizer=Adam(learning_rate=1e-2),
@@ -55,7 +56,9 @@ class CNNCCEAESRDBaseline(SCANNModel):
         return model, scoring_model
 
     def fit(self, X, y, verbose=1, **kwargs):
-        return super().fit_lr(X=X, y=y, epochs=50, batch_size=50, max_lr=1e-2, verbose=verbose, **kwargs)
+        kwargs['epochs'] = 50
+        kwargs['batch_size'] = 50
+        return super().fit_lr(X=X, y=y, max_lr=1e-2, verbose=verbose, **kwargs)
 
     def predict_scores(self, X, verbose=0, **kwargs):
         return super().predict_scores(X, verbose, **kwargs)

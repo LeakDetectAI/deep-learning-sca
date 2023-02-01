@@ -46,7 +46,9 @@ class CNNRankingLossAESHDBaseline(SCANNModel):
         return model, scoring_model
 
     def fit(self, X, y, verbose=1, **kwargs):
-        return super().fit(X=X, y=y, epochs=20, batch_size=256, verbose=verbose, **kwargs)
+        kwargs['epochs'] = 20
+        kwargs['batch_size'] = 256
+        return super().fit(X=X, y=y, verbose=verbose, **kwargs)
 
     def predict_scores(self, X, verbose=0, **kwargs):
         return super().predict_scores(X, verbose, **kwargs)

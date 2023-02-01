@@ -49,7 +49,9 @@ class CNNRankingLossASCADDesync0Baseline(SCANNModel):
         return model, scoring_model
 
     def fit(self, X, y, verbose=1, **kwargs):
-        return super().fit_lr(X=X, y=y, epochs=50, batch_size=50, verbose=verbose, max_lr=5e-3, **kwargs)
+        kwargs['epochs'] = 50
+        kwargs['batch_size'] = 50
+        return super().fit_lr(X=X, y=y, verbose=verbose, max_lr=5e-3, **kwargs)
 
     def predict_scores(self, X, verbose=0, **kwargs):
         return super().predict_scores(X, verbose, **kwargs)

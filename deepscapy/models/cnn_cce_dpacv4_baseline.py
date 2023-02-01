@@ -44,7 +44,9 @@ class CNNCCEDPACV4Baseline(SCANNModel):
         return model, scoring_model
 
     def fit(self, X, y, verbose=1, **kwargs):
-        return super().fit(X=X, y=y, batch_size=50, epochs=50, verbose=verbose, **kwargs)
+        kwargs['epochs'] = 50
+        kwargs['batch_size'] = 50
+        return super().fit(X=X, y=y, verbose=verbose, **kwargs)
 
     def predict_scores(self, X, verbose=0, **kwargs):
         return super().predict_scores(X, verbose, **kwargs)
