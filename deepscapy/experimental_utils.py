@@ -36,8 +36,8 @@ cnn_rkl_baseline_dictionary = {ASCAD_DESYNC0: CNNRankingLossASCADDesync0Baseline
                                AES_RD: CNNCCEAESRDBaseline,
                                DP4_CONTEST: CNNCCEDPACV4Baseline,
                                CHES_CTF: CNNRankingLossASCADDesync100Baseline,
-                               ASCAD_DESYNC0_VARIABLE: CNNRankingLossASCADDesync0Baseline,
-                               ASCAD_DESYNC50_VARIABLE: CNNRankingLossASCADDesync50Baseline,
+                               ASCAD_DESYNC0_VARIABLE: CNNRankingLossASCADDesync100Baseline,
+                               ASCAD_DESYNC50_VARIABLE: CNNRankingLossASCADDesync100Baseline,
                                ASCAD_DESYNC100_VARIABLE: CNNRankingLossASCADDesync100Baseline,
                                AES_HDV2_NORM: CNNRankingLossAESHDBaseline,
                                AES_HDV2_EXT: CNNRankingLossAESHDBaseline

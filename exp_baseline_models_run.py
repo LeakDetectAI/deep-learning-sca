@@ -73,8 +73,8 @@ def check_if_model_trained(model_name, loss_function, dataset):
 
 if __name__ == "__main__":
     # Make results deterministic
-    seed = 1234
-    os.environ['PYTHONHASHSEED'] = str(seed)
+    seed = 42
+    #os.environ['PYTHONHASHSEED'] = str(seed)
     # Argument parser
     parser = argparse.ArgumentParser(description='Model HP Tuner & Model Training')
     parser.add_argument('--dataset', type=str, required=True,
@@ -120,8 +120,8 @@ if __name__ == "__main__":
     else:
         model_class = model_dictionary[model_name]
 
-    if model_name == CNN_ZAID_BASELINE and (dataset_name == DP4_CONTEST or dataset_name == AES_HD or \
-                                            dataset_name == ASCAD_DESYNC0 or dataset_name == ASCAD_DESYNC0_VARIABLE):
+    if model_name == CNN_ZAID_BASELINE and (dataset_name == DP4_CONTEST or dataset_name == AES_HD
+                                            or dataset_name == ASCAD_DESYNC0):
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='standard')
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='minmax')
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
     log_path = os.path.join(os.getcwd(), 'logs', f'{model_name}.log')
     create_dir_recursively(log_path, is_file_path=True)
     logger = setup_logging(log_path=log_path)
-    setup_random_seed(seed=seed)
+    #setup_random_seed(seed=seed)
     logger.info('Model name {}'.format(model_name))
     config = vars(arguments)
     logger.info("Arguments {}".format(print_dictionary(config)))
@@ -216,5 +216,6 @@ if __name__ == "__main__":
     end_time = time.time()
     time_taken = timedelta(seconds=(end_time - start_time))
     logger.info('The total time elapsed for model {} is {}'.format(model_name, time_taken))
+    logger.info(f"Cluster ID: {os.environ['SLURM_JOB_ID']}")
     if check_if_exist:
         logger.info(f"Model {model_name} already Trained")

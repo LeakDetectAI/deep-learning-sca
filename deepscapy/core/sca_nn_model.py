@@ -1,3 +1,4 @@
+import logging
 import math
 import os
 
@@ -32,6 +33,7 @@ class SCANNModel(SCABaseModel):
         self.model_type = model_type
         self.weight_averaging = weight_averaging
         self.model_name = model_name
+        self.logger = logging.getLogger(SCANNModel.__name__)
         if self.model_type not in [ONED_CNN, TWOD_CNN_RECT, TWOD_CNN_SQR, MLP]:
             raise Warning('Input reshaping not defined for the specified model type {}'.format(model_type))
         # check the model path, make the default one in the deep-learning-sca, fileformat dataset_type_model_lf
@@ -78,6 +80,8 @@ class SCANNModel(SCABaseModel):
         else:
             save_model = AverageModelCheckpoint(filepath=self.model_file, update_weights=True)
         callbacks = [save_model]
+        self.logger.info(dict(batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=verbose))
+        self.logger.info(dict(X=X.shape, y=y.shape))
         if 'ranking_loss_optimized' in str(self.loss_function):
             self.scoring_model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=verbose,
                                    **kwargs)
@@ -98,7 +102,8 @@ class SCANNModel(SCABaseModel):
         lr_manager = OneCycleLR(max_lr=max_lr, batch_size=batch_size, samples=X.shape[0], end_percentage=0.2,
                                 scale_percentage=0.1, maximum_momentum=None, minimum_momentum=None, verbose=True)
         callbacks = [save_model, lr_manager]
-
+        self.logger.info(dict(batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=verbose))
+        self.logger.info(dict(X=X.shape, y=y.shape))
         if 'ranking_loss_optimized' in str(self.loss_function):
             self.scoring_model.fit(x=X, y=y, batch_size=batch_size, epochs=epochs, callbacks=callbacks, verbose=verbose,
                                    **kwargs)

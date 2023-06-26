@@ -44,7 +44,7 @@ class CNNCCEAESRDBaseline(SCANNModel):
         x = Dense(10, activation='selu', name='fc2_aes_rd', **kwargs)(x)
 
         # Logits layer
-        score_layer = Dense(self.num_classes, activation=None, name='score_aes_rd', **kwargs)(x)
+        score_layer = Dense(self.num_classes, activation=None, name='score_aes_rd')(x)
         predictions = Activation('softmax', name='prediction_aes_rd')(score_layer)
 
         # Create model

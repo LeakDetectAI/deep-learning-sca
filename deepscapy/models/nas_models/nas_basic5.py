@@ -3,7 +3,7 @@ from keras_tuner.engine import hyperparameters as hp
 
 from deepscapy.constants import NAS_BASIC5
 from deepscapy.core import *
-from deepscapy.core.extension_blocks import DenseBlockExt, ClassificationHead
+from deepscapy.core.extension_blocks import DenseBlockExt, ClassificationHeadExt
 
 
 class NASBasic5(NASModel):
@@ -45,7 +45,7 @@ class NASBasic5(NASModel):
         x = DenseBlockExt(num_layers=hp.Choice(name='num_layers', values=[1, 2, 3]),
                           num_units=hp.Choice(name='num_units', values=self.n_units),
                           dropout=hp.Choice("dropout", self.dropout, default=0.0))(x)
-        output_node = ClassificationHead(num_classes=self.num_classes, loss=self.loss_function, metrics=self.metrics,
+        output_node = ClassificationHeadExt(num_classes=self.num_classes, loss=self.loss_function, metrics=self.metrics,
                                             dropout=hp.Choice("dropout", self.dropout, default=0.0))(x)
 
         auto_model = AutoModelExt(inputs=input_node, outputs=output_node, overwrite=self.overwrite,

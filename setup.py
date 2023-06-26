@@ -3,8 +3,8 @@ from setuptools import setup, find_packages
 
 DISTNAME = 'deepscapy'
 DESCRIPTION = 'Side Channel Attacks using Deep Neural Networks'
-MAINTAINER = 'Anonymous'
-MAINTAINER_EMAIL = 'anonymous@anonymous.de'
+MAINTAINER = 'Varun Nandkumar Golani'
+MAINTAINER_EMAIL = 'prithag@mail.upb.de'
 VERSION = "1.0"
 
 PROJECT_ROOT = dirname(realpath(__file__))

@@ -20,6 +20,8 @@ if __name__ == "__main__":
     # Make results deterministic
     seed = 1234
     os.environ['PYTHONHASHSEED'] = str(seed)
+    # os.environ["WANDB_API_KEY"] = "e1cd10bac622be84198c705e89f0209dd0fc0ac2"
+    # os.environ["WANDB_MODE"] = "online"
     setup_random_seed(seed=seed)
 
     # Argument parser
@@ -80,10 +82,8 @@ if __name__ == "__main__":
         model_class = model_dictionary[model_name]
         # X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='standard')
 
-    if model_name == CNN_ZAID_BASELINE and (dataset_name == ASCAD_DESYNC0 or dataset_name == AES_HD):
-        X_profiling, X_attack = standardize_features(X_profiling, X_attack)
-
-    if model_name == CNN_ZAID_BASELINE and dataset_name == DP4_CONTEST:
+    if model_name == CNN_ZAID_BASELINE and (dataset_name == DP4_CONTEST or dataset_name == AES_HD or
+                                            dataset_name == ASCAD_DESYNC0 or dataset_name == ASCAD_DESYNC0_VARIABLE):
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='standard')
         X_profiling, X_attack = standardize_features(X_profiling, X_attack, standardize='minmax')
 
@@ -113,6 +113,7 @@ if __name__ == "__main__":
     log_path = os.path.join(os.getcwd(), 'logs', f'{model_name}_attack.log')
     print(model_name, log_path)
     config = vars(arguments)
+    # wandb.init(project='DLSCA', name=model_name, config=config)
     create_dir_recursively(log_path, is_file_path=True)
     logger = setup_logging(log_path=log_path)
     setup_random_seed(seed=seed)

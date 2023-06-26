@@ -117,7 +117,7 @@ class AttackModel(metaclass=ABCMeta):
 
             guess_entropy_evol = self._perform_attacks_(predictions=predictions, plain_cipher_fold=plain_cipher_fold,
                                                         offset_fold=offset_fold)
-            #guess_entropy_evol = np.sort(guess_entropy_evol)[::-1]
+            guess_entropy_evol = np.sort(guess_entropy_evol)[::-1]
             self.logger.info(f"Guess Entropy {guess_entropy_evol}")
             self.model_mean_ranks[fold_id] = guess_entropy_evol
             self.model_mean_rank_final[fold_id] = np.mean(self.model_mean_ranks[fold_id])

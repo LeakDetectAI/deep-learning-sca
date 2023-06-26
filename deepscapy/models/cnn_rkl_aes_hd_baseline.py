@@ -34,7 +34,7 @@ class CNNRankingLossAESHDBaseline(SCANNModel):
         x = Dense(2, activation='selu', name='fc1_aes_hd', **kwargs)(x)
 
         # Logits layer
-        score_layer = Dense(self.num_classes, activation=None, name='score_aes_hd', **kwargs)(x)
+        score_layer = Dense(self.num_classes, activation=None, name='score_aes_hd')(x)
         predictions = Activation('softmax', name='prediction_aes_hd')(score_layer)
 
         # Create model
@@ -46,7 +46,7 @@ class CNNRankingLossAESHDBaseline(SCANNModel):
         return model, scoring_model
 
     def fit(self, X, y, verbose=1, **kwargs):
-        kwargs['epochs'] = 20
+        kwargs['epochs'] = 100
         kwargs['batch_size'] = 256
         return super().fit(X=X, y=y, verbose=verbose, **kwargs)
 

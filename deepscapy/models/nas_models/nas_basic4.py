@@ -45,8 +45,8 @@ class NASBasic4(NASModel):
         x = DenseBlockExt(num_layers=hp.Choice(name='num_layers', values=[1, 2, 3]),
                           num_units=hp.Choice(name='num_units', values=self.n_units),
                           dropout=hp.Choice("dropout", self.dropout, default=0.0))(x)
-        output_node = ClassificationHeadExt(num_classes=self.num_classes, loss=self.loss_function, metrics=self.metrics,
-                                            dropout=hp.Choice("dropout", self.dropout, default=0.0))(x)
+        output_node = ClassificationHeadFixed(num_classes=self.num_classes, loss=self.loss_function, metrics=self.metrics,
+                                              dropout=hp.Choice("dropout", self.dropout, default=0.0))(x)
 
         auto_model = AutoModelExt(inputs=input_node, outputs=output_node, overwrite=self.overwrite,
                                   max_trials=self.max_trials, objective=self.objective,

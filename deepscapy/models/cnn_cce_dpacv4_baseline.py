@@ -32,7 +32,7 @@ class CNNCCEDPACV4Baseline(SCANNModel):
         x = Dense(2, activation='selu', name='fc1_dpacv4', **kwargs)(x)
 
         # Logits layer
-        score_layer = Dense(self.num_classes, activation=None, name='score_dpacv4', **kwargs)(x)
+        score_layer = Dense(self.num_classes, activation=None, name='score_dpacv4')(x)
         predictions = Activation('softmax', name='prediction_dpacv4')(score_layer)
 
         # Create model

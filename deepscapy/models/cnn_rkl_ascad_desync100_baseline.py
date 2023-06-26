@@ -48,7 +48,7 @@ class CNNRankingLossASCADDesync100Baseline(SCANNModel):
         x = Dense(20, activation='selu', name='fc3_ascad_desync100', **kwargs)(x)
 
         # Logits layer
-        score_layer = Dense(self.num_classes, activation=None, name='score_ascad_desync100', **kwargs)(x)
+        score_layer = Dense(self.num_classes, activation=None, name='score_ascad_desync100')(x)
         predictions = Activation('softmax', name='prediction_ascad_desync100')(score_layer)
 
         # Create model

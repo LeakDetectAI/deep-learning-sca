@@ -170,7 +170,7 @@ class SinglePoolBlock(ak.Block):
         return output_node
 
 
-class ClassificationHeadExt(head_module.Head):
+class ClassificationHeadFixed(head_module.Head):
     """Classification Dense layers.
 
     Use sigmoid and binary crossentropy for binary classification and multi-label
@@ -218,6 +218,8 @@ class ClassificationHeadExt(head_module.Head):
         self._encoded_for_softmax = None
         self._add_one_dimension = False
         self._labels = None
+        self.logger = logging.getLogger(ClassificationHeadFixed.__name__)
+
 
     def infer_loss(self):
         if not self.num_classes:
@@ -238,7 +240,6 @@ class ClassificationHeadExt(head_module.Head):
         return config
 
     def build(self, hp, inputs=None):
-        self.logger = logging.getLogger(ClassificationHeadExt.__name__)
         inputs = nest.flatten(inputs)
         utils.validate_num_inputs(inputs, 1)
         input_node = inputs[0]
@@ -327,7 +328,7 @@ class ClassificationHeadExt(head_module.Head):
 
 
 
-class ClassificationHead(head_module.Head):
+class ClassificationHeadExt(head_module.Head):
     """Classification Dense layers.
 
     Use sigmoid and binary crossentropy for binary classification and multi-label
@@ -376,6 +377,7 @@ class ClassificationHead(head_module.Head):
         self._encoded_for_softmax = None
         self._add_one_dimension = False
         self._labels = None
+        self.logger = logging.getLogger(ClassificationHeadExt.__name__)
         #print(f"self._labels {self.loss}")
 
     def infer_loss(self):
@@ -406,14 +408,13 @@ class ClassificationHead(head_module.Head):
         if len(output_node.shape) > 2:
             output_node = reduction.SpatialReduction().build(hp, output_node)
 
-        if self.dropout is not None:
-            dropout = self.dropout
-        else:
-            dropout = hp.Choice("dropout", [0.0, 0.25, 0.5], default=0)
+        self.dropout = hp.Choice("dropout", [0.0, 0.1, 0.2, 0.3, 0.4, 0.5], default=0.0)
         print(f"build {self.loss}")
+        self.logger.info("Dropout {}".format(self.dropout))
         if utils.add_to_hp(self.dropout, hp) > 0:
-            output_node = layers.Dropout(dropout)(output_node)
+            output_node = layers.Dropout(self.dropout)(output_node)
         output_node = layers.Dense(self.shape[-1])(output_node)
+        self.logger.info(f"Loss function {self.loss}")
         if isinstance(self.loss, keras.losses.BinaryCrossentropy):
             output_node = layers.Activation(activations.sigmoid, name=self.name)(
                 output_node
@@ -433,9 +434,9 @@ class ClassificationHead(head_module.Head):
     def config_from_analyser(self, analyser):
         super().config_from_analyser(analyser)
         self.num_classes = analyser.num_classes
-        #print(f"before infer {self.loss}")
+        self.logger.info(f"before infer {self.loss}")
         self.loss = self.infer_loss()
-        #print(f"after infer {self.loss}")
+        self.logger.info(f"after infer {self.loss}")
         self._encoded = analyser.encoded
         self._encoded_for_sigmoid = analyser.encoded_for_sigmoid
         self._encoded_for_softmax = analyser.encoded_for_softmax

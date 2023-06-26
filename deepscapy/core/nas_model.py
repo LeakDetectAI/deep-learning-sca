@@ -104,7 +104,8 @@ class NASModel(BaseEstimator, ClassifierMixin):
     def fit(self, X, y, epochs=200, final_model_epochs=200, batch_size=100, validation_split=0.1, verbose=0, **kwargs):
         X, y = self.reshape_inputs(X, y)
         callbacks = [PrintTrialModelCallback()]
-        self.logger.info("Remaining Trials for the tuner are {}".format(self.auto_model.tuner.remaining_trials))
+        self.logger.info(f"Remaining Trials for the tuner are {self.auto_model.tuner.remaining_trials}")
+        self.auto_model.tuner.results_summary()
         self.auto_model.fit(X, y, verbose=verbose, epochs=epochs, batch_size=batch_size,
                             validation_split=validation_split, callbacks=callbacks, **kwargs)
         if str(self.loss_function) != 'categorical_crossentropy':

@@ -52,7 +52,7 @@ if __name__ == "__main__":
     logger = setup_logging(log_path=log_path)
     setup_random_seed(seed=seed)
     models_not_finished = []
-    models_with_other_loss_function = []
+    models_with_other_loss_function = dict()
     for leakage_model in ['HW', 'ID']:
         logger.info("#############################################################################")
         logger.info(f"***************************Leakage Model {leakage_model}***************************")
@@ -88,28 +88,33 @@ if __name__ == "__main__":
                             else:
                                 loss_str = str(attack_model.loss)
                                 logger.info("Model loss_function at {}".format(loss_str))
-                                logger.info("CategoricalCrossentropy" not in loss_str)
-                                if loss_function !=CATEGORICAL_CROSSENTROPY_LOSS:
+                                logger.info(f"Is loss CCE, condition {loss_function == CATEGORICAL_CROSSENTROPY_LOSS:}")
+                                logger.info(f"Loss function {loss_str}, condition {'CategoricalCrossentropy' not in loss_str}")
+                                if loss_function != CATEGORICAL_CROSSENTROPY_LOSS:
                                     if "CategoricalCrossentropy" not in loss_str:
-                                        models_with_other_loss_function.append(model_name)
+                                        if dataset_name not in models_with_other_loss_function.keys():
+                                            models_with_other_loss_function[dataset_name] = [model_name]
+                                        else:
+                                             models_with_other_loss_function[dataset_name].append(model_name)
 
-            for args_model_name in BASELINES:
-                for loss_function in LF_EXTENSION.keys():
-                    logger.info("#############################################################################")
-                    logger.info(f"Dataset {dataset_name} Model Name {args_model_name} "
-                                f"Loss function {loss_function}")
-                    model_name = '{}_{}_{}_{}'.format(dataset_name.lower(), args_model_name, input_dim,
-                                                      LF_EXTENSION[loss_function])
-                    if leakage_model == HW:
-                        model_name = f"{model_name}_{leakage_model.lower()}"
-                    model_file = os.path.join(get_trained_models_path(folder=TRAINED_MODELS_NON_TUNED),
-                                              '{}.tf'.format(model_name))
-                    logger.info('Model name {}'.format(model_name))
-                    logger.info("Model stored at {}".format(model_file))
-                    attack_model = _load_attack_model(dataset_name, model_file, model_name, loss_function, logger)
-                    if attack_model is None:
-                        models_not_finished.append(model_name)
-                        logger.info("Model Still not finished")
+            # for args_model_name in BASELINES:
+            #     for loss_function in LF_EXTENSION.keys():
+            #         logger.info("#############################################################################")
+            #         logger.info(f"Dataset {dataset_name} Model Name {args_model_name} "
+            #                     f"Loss function {loss_function}")
+            #         model_name = '{}_{}_{}_{}'.format(dataset_name.lower(), args_model_name, input_dim,
+            #                                           LF_EXTENSION[loss_function])
+            #         if leakage_model == HW:
+            #             model_name = f"{model_name}_{leakage_model.lower()}"
+            #         model_file = os.path.join(get_trained_models_path(folder=TRAINED_MODELS_NON_TUNED),
+            #                                   '{}.tf'.format(model_name))
+            #         logger.info('Model name {}'.format(model_name))
+            #         logger.info("Model stored at {}".format(model_file))
+            #         attack_model = _load_attack_model(dataset_name, model_file, model_name, loss_function, logger)
+            #         if attack_model is None:
+            #             models_not_finished.append(model_name)
+            #             logger.info("Model Still not finished")
 
     logger.info(f"Models which are not finished {models_not_finished}")
-    logger.info(f"Models with other loss function {models_with_other_loss_function}")
+    for key, value  in models_with_other_loss_function.items():
+        logger.info(f"Dataset {key}: Models Left {value}")
