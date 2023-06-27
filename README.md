@@ -52,3 +52,21 @@ Search Space
 The search space used in the paper "Automated Side-Channel Attacks using Black-Box Neural Architecture Search" is already defined in this project.
 These are the relevant parameter ranges:
 
+| Hyperparameter Type                         | Hyperparameter                  | Possible Options                                                                                                                                                                       |
+|---------------------------------------------|-----------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Whole Network | Optimizer                       | \{'adam' , 'adam_with_weight_decay'\}                                                                                                                                               |
+|                                             | Learning rate                   | {1e-1, 5e-2, 1e-2, 5e-3, 1e-3, 5e-4, 1e-4, 5e-5, 1e-5} |
+| Every Layer   | Dropout                         | \{0.0, 0.1, 0.2, 0.3, 0.4, 0.5\}                                                                                                                                                    |
+|                                             | Use Batch Normalization         | \{True, False\}                                                                                                                                                                        |
+|                                             | Activation Function             | \{'relu', 'selu', 'elu', 'tanh'\}                                                                                                                                                      |
+| Convolutional Block                             | # of Blocks | {1, 2, 3, 4, 5}
+|                                             | Convolutional Kernel Size       | \{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14\}                                                                                                                                         |
+|                                             | Convolutional Filters           | \{2, 8, 16, 32, 64, 128, 256\}                                                                                                                                                         |
+|                                             | Pooling Type                    | \{'max' , 'average'\}                                                                                                                                                                  |
+|                                             | Pooling Strides 1D CNN  | \{2, 3, 4, 5, 6, 7, 8, 9, 10\}                                                                                                                                                         |
+|                                             | Pooling Poolsize 1D CNN | \{2, 3, 4, 5\}                                                                                                                                                                         |
+|                                             | Pooling Strides 2D CNN  | \{2, 4\}                                                                                                                                                                               |
+|                                             | Pooling Poolsize 2D CNN | Convolutional Kernel Size-1                                                                                                                                                            |
+| Dense Block   | # of Blocks                      | \{1, 2, 3\}                                                                                                                                                                            |
+|                                             | Hidden Units                    | \{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024\}                                                                                                                                           |
+
