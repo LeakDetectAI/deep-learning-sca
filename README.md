@@ -29,9 +29,26 @@ License
 
 Datasets
 --------
-The datasets used in the paper Automated Side-Channel Attacks using Black-Box Neural Architecture Search can be found at https://drive.google.com/drive/folders/1GcWQvwwEdbj2L0c1hd2YpLpbS-gIFJJ5. The following table shows their properties:
+The datasets used in the paper "Automated Side-Channel Attacks using Black-Box Neural Architecture Search" can be found at https://drive.google.com/drive/folders/1GcWQvwwEdbj2L0c1hd2YpLpbS-gIFJJ5. The following table shows their properties:
 
+| Dataset name       | # Features   | # Profiling traces   | # Attack traces   | Attack byte | URL                                                                                                                              |
+|----------------------|----------------|------------------------|---------------------|---------------|------------------------------------------------------------------------------------------------------------------------------------|
+| ASCAD\_f           | 700          | 50000                | 10000             | 2           | ASCAD.h5 from https://github.com/ANSSI-FR/ASCAD/tree/master/ATMEGA_AES_v1/ATM_AES_v1_fixed_key                      |
+| ASCAD\_f desync50  | 700          | 50000                | 10000             | 2           | ASCAD_desync50.h5 from "                                                                                    |
+| ASCAD\_f desync100 | 700          | 50000                | 10000             | 2           | ASCAD_desync100.h5 from "                                                                                    |
+| ASCAD\_r           | 1400         | 50000                | 100000            | 2           | ASCAD.h5 from https://github.com/ANSSI-FR/ASCAD/tree/master/ATMEGA_AES_v1/ATM_AES_v1_variable_key/                  |
+| ASCAD\_r desync50  | 1400         | 50000                | 100000            | 2           | ASCAD_desync50.h5 from "                                                                                     |
+| ASCAD\_r desync100 | 1400         | 50000                | 100000            | 2           | ASCAD_desync100.h5 from "                                                                                    |
+| CHES CTF           | 2200         | 45000                | 5000              | 2           | http://aisylabdatasets.ewi.tudelft.nl/ches_ctf.h5                                                                            |
+| AES\_HD            | 1250         | 50000                | 25000             | 0           | https://github.com/gabzai/Methodology-for-efficient-CNN-architectures-in-SCA/blob/master/AES_HD/AES_HD_dataset.zip           |
+| AES\_RD            | 3500         | 25000                | 25000             | 0           | https://github.com/gabzai/Methodology-for-efficient-CNN-architectures-in-SCA/tree/master/AES_RD/AES_RD_dataset               |
+| DPAv4              | 4000         | 4500                 | 5000              | 0           | https://github.com/gabzai/Methodology-for-efficient-CNN-architectures-in-SCA/blob/master/DPA-contest%20v4/DPAv4_dataset.zip |
+
+More datasets of hardware side-channel attacks can be found at https://github.com/ITSC-Group/sca-datasets.
 
 
 Search Space
 ------------
+The search space used in the paper "Automated Side-Channel Attacks using Black-Box Neural Architecture Search" is already defined in this project.
+These are the relevant parameter ranges:
+
