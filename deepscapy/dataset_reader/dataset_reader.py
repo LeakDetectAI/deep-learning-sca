@@ -2,8 +2,10 @@ import inspect
 import logging
 import os
 from abc import ABCMeta, abstractmethod
+import tempfile
 
 import numpy as np
+import gdown
 
 from deepscapy.constants import ID, HW
 
@@ -22,20 +24,21 @@ class DatasetReader(metaclass=ABCMeta):
             Keyword arguments for the dataset parser
         """
         self.dr_logger = logging.getLogger("DatasetReader")
-        if "pc2" in os.environ["HOME"]:
-            dirname = os.path.join(os.environ["PFS_FOLDERA"], "deep-learning-sca", "deepscapy", "datasets")
-        else:
-            dirname = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe()))).replace(
-                "dataset_reader",
-                "datasets")
+        # Specify the download directory
+        download_dir = os.path.join(os.path.expanduser("~"), "Downloads")
+
+        # Create the download directory if it doesn't exist
+        if not os.path.exists(download_dir):
+            os.makedirs(download_dir)
+
         # if "pc2" in os.environ["HOME"]:
         #    dirname = os.path.join(os.environ["PFS_FOLDER"], "deep-learning-sca", "deepscapy", "datasets")
         # else:
         #    dirname = os.path.join(os.environ["HOME"], "deep-learning-sca", "deepscapy", "datasets")
         if dataset_folder is not None:
-            self.dirname = os.path.join(dirname, dataset_folder)
+            self.dirname = os.path.join(download_dir, dataset_folder)
             if not os.path.exists(self.dirname):
-                self.dr_logger.warning("Path given for dataset does not exists {}".format(self.dirname))
+                self.dr_logger.warning(f"Path given for dataset does not exists {self.dirname}")
         else:
             self.dirname = None
         self.leakage_model = leakage_model

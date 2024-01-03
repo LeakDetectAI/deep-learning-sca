@@ -18,7 +18,7 @@ class AESHDv2DatasetReader(DatasetReader, metaclass=ABCMeta):
         self.load_metadata = load_metadata
         self.load_key = load_key
         assert (dataset_type in AES_HDV2_DATASETS), f"Dataset Type {dataset_type} does not exist in {AES_HDV2_DATASETS}"
-        self.database_file = os.path.join(self.dirname, dataset_type, "{}.h5".format(dataset_type))
+        self.database_file = os.path.join(self.dirname, dataset_type, f"{dataset_type}.h5")
 
         if self.load_key:
             self.key_file = os.path.join(self.dirname, dataset_type, "key.npy")

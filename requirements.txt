@@ -10,3 +10,7 @@ tensorflow_addons==0.17.0
 keras_tuner==1.1.2
 keras==2.9.0
 autokeras==1.0.19
+google-api-python-client
+google-auth google-auth-oauthlib
+google-auth-httplib2
+gdown

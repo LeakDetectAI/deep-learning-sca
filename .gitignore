@@ -11,3 +11,6 @@
 /notebooks/
 *.pyc
 /deepscapy/datasets/
+/build/
+/deepscapy.egg-info/
+/dist/
