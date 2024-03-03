@@ -2,10 +2,10 @@
 
 
 
-deepscapy
+Package
 ------------
 
-deepscapy is a python package for automatically finding optimal architectures when performing a side channel attack.
+The deepscapy is a python package for automatically finding optimal architectures when performing a side channel attack.
 Its Ranking Loss (RKL) implementation is based on https://github.com/gabzai/Ranking-Loss-SCA.
 
 
