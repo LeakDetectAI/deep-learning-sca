@@ -1,29 +1,5 @@
-## A Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search for Ethereum and Web3
+# A Python library to perform Automated Side-Channel Attacks using Black-Box Neural Architecture Search
 
-### The Problem No One Is Measuring
-
-Ethereum security today focuses on visible threats: smart contract exploits, phishing, and wallet hacks.
-
-But a silent class of vulnerabilities remains largely unaddressed:
-
-- Cryptographic implementations leaking secrets via side-channels
-- Hardware wallets, validators, and client nodes exposing patterns through:
-- Timing variations
-- Power / computation traces
-- Memory access behavior
-- Cross-layer leakage between off-chain compute and on-chain execution
-
-These leaks can allow attackers to recover private keys or sensitive data—even when cryptography is mathematically secure.
-
-
-### What We Built
-
-deepscapy is an open-source Python library that brings automated side-channel attack evaluation to Web3 systems using AI-driven Neural Architecture Search (NAS).
-Instead of manually designing attack models, our system:
-
-- Automatically explores thousands of neural network architectures
-- Identifies the most effective models for extracting hidden leakage
-- Quantifies real-world risk using Guessing Entropy (GE) and Vulnerability Scores (VS)
 
 
 Package
@@ -172,5 +148,4 @@ If you use this toolkit in your research, please cite our work:
 }
 ```
 ## 📧 Contact Information
-For any questions or feedback, please contact Pritha Gupta at prithagupta.nsit@icloud.com and marketing@tickervalue.com
-
+For any questions or feedback, please contact Pritha Gupta at prithagupta.nsit@icloud.com.
