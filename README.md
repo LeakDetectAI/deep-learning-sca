@@ -132,20 +132,6 @@ If you use this toolkit in your research, please cite our work:
   location  = {Benevento, Italy},
   series    = {ARES '23}
 }
-
-@PhdThesis{Gupta2025,
-  author    = {Gupta, Pritha},
-  title     = {Advanced Machine Learning Methods for Information Leakage Detection in Cryptographic Systems},
-  series    = {Institut f{\"u}r Informatik},
-  year      = {2025},
-  publisher = {Ver{\"o}ffentlichungen der Universit{\"a}t},
-  address   = {Paderborn},
-  pages     = {1 Online-Ressource (3, xi, 272 Seiten) Diagramme},
-  note      = {Tag der Verteidigung: 09.05.2025},
-  note      = {Universit{\"a}t Paderborn, Dissertation, 2025},
-  url       = {https://nbn-resolving.org/urn:nbn:de:hbz:466:2-54956},
-  language  = {eng}
-}
 ```
 ## 📧 Contact Information
 For any questions or feedback, please contact Pritha Gupta at prithagupta.nsit@icloud.com.
